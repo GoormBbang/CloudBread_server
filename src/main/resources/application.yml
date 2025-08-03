@@ -1,5 +1,5 @@
+# spring config
 spring:
-
   # mysql
   datasource:
     url: jdbc:mysql://localhost:3307/GoormBbang?useSSL=false&allowPublicKeyRetrieval=true
@@ -16,3 +16,15 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
     show-sql: true
     format_sql: true
+
+
+# Swagger config
+springdoc:
+  packages-to-scan: com.cloudbread.domain
+  default-consumes-media-type: application/json;charset=UTF-8
+  default-produces-media-type: application/json;charset=UTF-8
+  swagger-ui:
+    path: /
+    disable-swagger-default-url: true
+    display-request-duration: true
+    operations-sorter: alpha
