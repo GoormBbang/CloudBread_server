@@ -1,0 +1,18 @@
+spring:
+
+  # mysql
+  datasource:
+    url: jdbc:mysql://localhost:3307/GoormBbang?useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # jpa
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+    show-sql: true
+    format_sql: true
