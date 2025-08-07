@@ -16,4 +16,12 @@ public class UserResponseDto {
         private boolean isAdult;
     }
 
+    @Builder
+    @AllArgsConstructor
+    @Getter
+    public static class SecurityContextDto {
+        private Long id;
+        private String email;
+    }
+
 }
