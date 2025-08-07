@@ -36,11 +36,11 @@ public class User extends BaseEntity {
 
     private String nickname;
 
-    private String profile_image_url;
+    private String profileImageUrl;
 
     private int age;
 
-    @Column(name = "due_date", nullable = false)
+    @Column(name = "due_date")
     private LocalDate dueDate;
 
     @Column(precision = 5, scale = 2)
@@ -55,13 +55,13 @@ public class User extends BaseEntity {
     private boolean activated; // soft-delete 구현, 삭제 구현 시 activated = 0 (false)
 
     @Builder
-    public User(Long id, String email, OauthProvider oauthProvider, String nickname, String profile_image_url, int age,
+    public User(Long id, String email, OauthProvider oauthProvider, String nickname, String profileImageUrl, int age,
                 LocalDate dueDate, BigDecimal height, BigDecimal weight, String otherHealthFactors, boolean activated) {
         this.id = id;
         this.email = email;
         this.oauthProvider = oauthProvider;
         this.nickname = nickname;
-        this.profile_image_url = profile_image_url;
+        this.profileImageUrl = profileImageUrl;
         this.age = age;
         this.dueDate = dueDate;
         this.height = height;
@@ -69,6 +69,27 @@ public class User extends BaseEntity {
         this.otherHealthFactors = otherHealthFactors;
         this.activated = activated;
     }
+
+    // JwtAuthorizationFilter에서 스프링컨텍스트에 넣을 유저 식별 정보 생성 함수
+    public static User createUserForSecurityContext(Long userId, String email){
+        return User.builder()
+                .id(userId)
+                .email(email)
+                .build();
+    }
+
+    // 첫번째 회원가입 -> oauth2 회원가입 (email, oauth_provider, nickname, profile_image_url // activated)
+    public static User createUserFirstOAuth(String email, String nickname, String profileImageUrl, OauthProvider oauthProvider) {
+        return User.builder()
+                .email(email)
+                .oauthProvider(oauthProvider)
+                .nickname(nickname)
+                .profileImageUrl(profileImageUrl)
+                .activated(true) // soft-delete를 위한 필드 (삭제 구현 시, activated = 0)
+                .build();
+
+    }
+
 
     // User 도메인 관련 비즈니스 로직
     public boolean isAdult(){ // 테스트
