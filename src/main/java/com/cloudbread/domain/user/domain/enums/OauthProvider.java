@@ -14,7 +14,7 @@ public enum OauthProvider {
         switch (registrationId.toLowerCase()) {
             case "kakao": return KAKAO;
             case "google": return GOOGLE;
-//            case "naver": return NAVER;
+            case "naver": return NAVER;
             default: throw new IllegalArgumentException("Unknown registrationId: " + registrationId);
         }
     }
