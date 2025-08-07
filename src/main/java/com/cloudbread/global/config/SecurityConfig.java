@@ -4,10 +4,10 @@ import com.cloudbread.auth.jwt.JwtAuthorizationFilter;
 import com.cloudbread.auth.jwt.JwtUtil;
 import com.cloudbread.auth.oauth2.CustomOAuth2UserService;
 import com.cloudbread.auth.oauth2.OAuth2LoginSuccessHandler;
+import com.cloudbread.auth.oauth2.exception.CustomOAuth2FailureHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -24,6 +24,7 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final JwtUtil jwtUtil;
+    private final CustomOAuth2FailureHandler customOAuth2FailureHandler;
 
     private final CorsConfigurationSource corsConfigurationSource;
     @Bean
@@ -40,6 +41,7 @@ public class SecurityConfig {
                         .userInfoEndpoint(userInfoEndpoint ->
                                 userInfoEndpoint.userService(customOAuth2UserService))
                         .successHandler(oAuth2LoginSuccessHandler)
+                        .failureHandler(customOAuth2FailureHandler) // 실패 시 핸들러 등록
 
                 )
                 .sessionManagement(session ->
@@ -49,7 +51,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/swagger-ui/**", "/v3/api-docs/**",
                                 "/api/users/example/{user-id}", // 패키지 구조 예제 코드
-                                "/oauth2/authorization/kakao", // 카카오 로그인 요청
+                                "/oauth2/authorization/**", // 카카오 로그인 요청 (/kakao, /google
                                 "/login/oauth2/code/**" // 카카오 인증 콜백
                         )
                         .permitAll()

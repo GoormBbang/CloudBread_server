@@ -1,10 +1,13 @@
 package com.cloudbread.auth.oauth2;
 
+import com.cloudbread.auth.oauth2.dto.GoogleResponse;
 import com.cloudbread.auth.oauth2.dto.KaKaoResponse;
 import com.cloudbread.auth.oauth2.dto.OAuth2Response;
+import com.cloudbread.auth.oauth2.exception.OauthProviderMismatchException;
 import com.cloudbread.domain.user.domain.entity.User;
 import com.cloudbread.domain.user.domain.enums.OauthProvider;
 import com.cloudbread.domain.user.domain.repository.UserRepository;
+import com.cloudbread.global.common.code.status.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -41,9 +44,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             case "kakao":
                 oAuth2Response = new KaKaoResponse(oAuth2User.getAttributes());
                 break;
-//            case "google":
-//                oAuth2Response = new GoogleResponse(oAuth2User.getAttributes());
-//                break;
+            case "google":
+                oAuth2Response = new GoogleResponse(oAuth2User.getAttributes());
+                break;
 //            case "naver":
 //                oAuth2Response = new NaverResponse(oAuth2User.getAttributes());
 //                break;
@@ -55,6 +58,20 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         // DB에 해당 유저가 있는지 판단
         Optional<User> foundUser = userRepository.findByEmail(oAuth2Response.getEmail());
+        OauthProvider currentProvider = OauthProvider.fromRegistrationId(registrationId);
+        log.info("currentProvider :: {}", currentProvider);
+
+        // 같은 이메일인데, 다른 provider라면 에러를 던져 막는다
+        if (foundUser.isPresent()){
+            User user = foundUser.get();
+
+            // 소셜 로그인 제공자 불일치 시, 예외 발생
+            if (!user.getOauthProvider().equals(currentProvider)){
+                log.warn("OAuth provider 불일치: 기존={}, 현재={}", user.getOauthProvider(), currentProvider);
+                throw  new OauthProviderMismatchException("해당 이메일은 다른 계정으로 이미 가입되어 있습니다.");
+
+            }
+        }
 
         // DB에 유저 없으면 - 회원가입
         if (foundUser.isEmpty()){
@@ -63,7 +80,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     oAuth2Response.getEmail(),
                     oAuth2Response.getNickName(),
                     oAuth2Response.getProfileImage(),
-                    OauthProvider.fromRegistrationId(registrationId)
+                    currentProvider
             );
 
             userRepository.save(user);
