@@ -1,24 +1,11 @@
 # spring config
 spring:
-  # mysql
-  datasource:
-    url: jdbc:mysql://localhost:3307/GoormBbang?useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: 1234
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
-  # jpa
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
-    show-sql: true
-    format_sql: true
+  config:
+    import: application-secret.yml
 
 
 # Swagger config
+# 로컬 Swagger 접근 url -> http://localhost:8080/swagger-ui/index.html
 springdoc:
   packages-to-scan: com.cloudbread.domain
   default-consumes-media-type: application/json;charset=UTF-8
