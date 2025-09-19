@@ -28,9 +28,8 @@ public class UserResponseDto {
     @Builder
     @AllArgsConstructor
     @Getter
-    public static class UpdateDetailsResponse {
-        private Long userId;
-        private String message;
+    public static class UpdateResponse {
+        private Long id; // 업데이트된 userId
     }
 
 }

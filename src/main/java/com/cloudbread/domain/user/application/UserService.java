@@ -6,5 +6,5 @@ import com.cloudbread.domain.user.dto.UserResponseDto;
 public interface UserService {
     UserResponseDto.Example exampleMethod(Long userId);
 
-    UserResponseDto.UpdateDetailsResponse updateDetails(Long userId, UserRequestDto.UpdateDetailsRequest request);
+    UserResponseDto.UpdateResponse updateDetails(Long userId, UserRequestDto.UpdateDetailsRequest request);
 }

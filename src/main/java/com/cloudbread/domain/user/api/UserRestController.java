@@ -29,12 +29,12 @@ public class UserRestController {
 
     // 회원가입 STEP2 api
     @PutMapping("/details")
-    public BaseResponse<UserResponseDto.UpdateDetailsResponse> updateDetails(
+    public BaseResponse<UserResponseDto.UpdateResponse> updateDetails(
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User,
             @RequestBody @Valid UserRequestDto.UpdateDetailsRequest request
     ){
         Long userId = customOAuth2User.getUserId();
-        UserResponseDto.UpdateDetailsResponse result = userService.updateDetails(userId, request);
+        UserResponseDto.UpdateResponse result = userService.updateDetails(userId, request);
 
         return BaseResponse.onSuccess(SuccessStatus.USER_REGISTER_DETAIL, result);
 

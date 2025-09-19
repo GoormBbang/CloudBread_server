@@ -71,14 +71,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         response.setContentType("application/json");
         response.setCharacterEncoding("utf-8");
 
-        ObjectMapper objectMapper = new ObjectMapper(); // 객체 -> json 문자열로 변환
-//        String body = objectMapper.writeValueAsString(
-//                Map.of(
-//                        "accessToken", accessToken,
-//                        "refreshToken", refreshToken
-//                )
-//        );
-
         Map<String, Object> body = Map.of(
                 "accessToken", accessToken,
                 "refreshToken", refreshToken,
@@ -89,9 +81,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 )
         );
 
-       //response.getWriter().write(body);
         new ObjectMapper().writeValue(response.getWriter(), body);
-
 
 
     }

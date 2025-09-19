@@ -6,12 +6,17 @@ import com.cloudbread.domain.user.dto.UserResponseDto;
 public class UserConverter {
 
     public static UserResponseDto.Example toExample(User user){
-        return UserResponseDto.Example
-                .builder()
+        return UserResponseDto.Example.builder()
                 .id(user.getId())
                 .nickname(user.getNickname())
          //       .age(user.getAge())
          //       .isAdult(user.isAdult())
+                .build();
+    }
+
+    public static UserResponseDto.UpdateResponse toUpdateResponse(User user){
+        return UserResponseDto.UpdateResponse.builder()
+                .id(user.getId())
                 .build();
     }
 

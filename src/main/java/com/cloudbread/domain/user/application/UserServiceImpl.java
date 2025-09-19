@@ -5,33 +5,37 @@ import com.cloudbread.domain.user.domain.entity.User;
 import com.cloudbread.domain.user.domain.repository.UserRepository;
 import com.cloudbread.domain.user.dto.UserRequestDto;
 import com.cloudbread.domain.user.dto.UserResponseDto;
-import com.cloudbread.domain.user.dto.UserResponseDto.Example;
-import com.cloudbread.domain.user.exception.UserException;
+import com.cloudbread.domain.user.exception.UserNotFoundException;
 import com.cloudbread.global.common.code.status.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     @Override
-    public UserResponseDto.UpdateDetailsResponse updateDetails(Long userId, UserRequestDto.UpdateDetailsRequest request) {
-        return null;
+    public UserResponseDto.UpdateResponse updateDetails(Long userId, UserRequestDto.UpdateDetailsRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException());
+
+        user.updateDetails(
+                request.getBirthDate(), request.getHeight(), request.getWeight(), request.getDueDate()
+        ); // 변경감지로 update
+
+        return UserConverter.toUpdateResponse(user);
     }
 
     @Override
     public UserResponseDto.Example exampleMethod(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException(ErrorStatus.NO_SUCH_USER));
+                .orElseThrow(() -> new UserNotFoundException());
 
-        // 도메인 비즈니스 로직 활용 -> 서비스단 부담 완화 / DDD 구조
-//        if (!user.isAdult()) {
-//            log.info("미성년자 회원입니다.");
-//        }
         return UserConverter.toExample(user);
     }
 

@@ -80,7 +80,7 @@ public class User extends BaseEntity {
                 .build();
     }
 
-    // 첫번째 회원가입 -> oauth2 회원가입 (email, oauth_provider, nickname, profile_image_url // activated)
+    // 회원가입 STEP1 -> oauth2 회원가입 (email, oauth_provider, nickname, profile_image_url // activated)
     public static User createUserFirstOAuth(String email, String nickname, String profileImageUrl, OauthProvider oauthProvider) {
         return User.builder()
                 .email(email)
@@ -92,17 +92,13 @@ public class User extends BaseEntity {
 
     }
 
-    public Map<String, Object> toLoginDto() {
-        return Map.of(
-                "id", this.id,
-                "nickname", this.nickname,
-                "profileImageUrl", this.profileImageUrl
-        );
+    // 회원가입 STEP2
+    public void updateDetails(LocalDate birthDate, BigDecimal height, BigDecimal weight, LocalDate dueDate){
+        this.birthDate = birthDate;
+        this.height = height;
+        this.weight = weight;
+        this.dueDate = dueDate;
     }
 
-    // User 도메인 관련 비즈니스 로직
-//    public boolean isAdult(){ // 테스트
-//        return this.age >= 20;
-//    }
 
 }
