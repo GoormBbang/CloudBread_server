@@ -3,6 +3,7 @@ package com.cloudbread.domain.user.application;
 import com.cloudbread.domain.user.converter.UserConverter;
 import com.cloudbread.domain.user.domain.entity.User;
 import com.cloudbread.domain.user.domain.repository.UserRepository;
+import com.cloudbread.domain.user.dto.UserRequestDto;
 import com.cloudbread.domain.user.dto.UserResponseDto;
 import com.cloudbread.domain.user.dto.UserResponseDto.Example;
 import com.cloudbread.domain.user.exception.UserException;
@@ -16,6 +17,11 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+
+    @Override
+    public UserResponseDto.UpdateDetailsResponse updateDetails(Long userId, UserRequestDto.UpdateDetailsRequest request) {
+        return null;
+    }
 
     @Override
     public UserResponseDto.Example exampleMethod(Long userId) {

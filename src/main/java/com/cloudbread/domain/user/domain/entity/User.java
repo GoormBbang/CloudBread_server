@@ -12,6 +12,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
+
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -38,7 +40,6 @@ public class User extends BaseEntity {
 
     private String profileImageUrl;
 
-   // private int age;
     private LocalDate birthDate; // 생년월일
 
     @Column(name = "due_date")
@@ -91,6 +92,13 @@ public class User extends BaseEntity {
 
     }
 
+    public Map<String, Object> toLoginDto() {
+        return Map.of(
+                "id", this.id,
+                "nickname", this.nickname,
+                "profileImageUrl", this.profileImageUrl
+        );
+    }
 
     // User 도메인 관련 비즈니스 로직
 //    public boolean isAdult(){ // 테스트

@@ -13,7 +13,9 @@ public enum SuccessStatus implements BaseCode {
     _CREATED(HttpStatus.CREATED, "COMMON201", "요청 성공 및 리소스 생성됨"),
 
     // user
-    USER_EXAMPLE_SUCCESS(HttpStatus.OK,"MEMBER_200","성공적으로 조회되었습니다.")
+    USER_EXAMPLE_SUCCESS(HttpStatus.OK,"MEMBER_200","성공적으로 조회되었습니다."),
+
+    USER_REGISTER_DETAIL(HttpStatus.OK, "MEMBER_201", "회원정보가 성공적으로 업데이트되었습니다."),
 
     ;
 

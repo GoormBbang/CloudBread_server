@@ -67,19 +67,30 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             tokenRepository.save(refreshTokenEntity);
         }
 
-        // 4. JSON 응답으로, accessToken과 refreshToken 을 반환해준다.
+        // 4. JSON 응답 생성
         response.setContentType("application/json");
         response.setCharacterEncoding("utf-8");
 
         ObjectMapper objectMapper = new ObjectMapper(); // 객체 -> json 문자열로 변환
-        String body = objectMapper.writeValueAsString(
-                Map.of(
-                        "accessToken", accessToken,
-                        "refreshToken", refreshToken
+//        String body = objectMapper.writeValueAsString(
+//                Map.of(
+//                        "accessToken", accessToken,
+//                        "refreshToken", refreshToken
+//                )
+//        );
+
+        Map<String, Object> body = Map.of(
+                "accessToken", accessToken,
+                "refreshToken", refreshToken,
+                "user", Map.of(
+                        "id", user.getId(),
+                        "nickname", user.getNickname(),
+                        "profileImageUrl", user.getProfileImageUrl()
                 )
         );
 
-       response.getWriter().write(body);
+       //response.getWriter().write(body);
+        new ObjectMapper().writeValue(response.getWriter(), body);
 
 
 

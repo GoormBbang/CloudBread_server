@@ -24,4 +24,13 @@ public class UserResponseDto {
         private String email;
     }
 
+    // 회원가입 STEP2
+    @Builder
+    @AllArgsConstructor
+    @Getter
+    public static class UpdateDetailsResponse {
+        private Long userId;
+        private String message;
+    }
+
 }
