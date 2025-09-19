@@ -30,8 +30,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(AbstractHttpConfigurer::disable) // 아직 백엔드만 이기에 cors 비활성화
-                .csrf(AbstractHttpConfigurer::disable) // csrf 방어 기능 비활성화 (jwt 토큰을 사용할 것이기에)
+                .csrf(cs -> cs.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource)) //  CORS 설정 추가
                 .formLogin(AbstractHttpConfigurer::disable) // 시큐리티 폼 로그인 비활성화
                 .httpBasic(AbstractHttpConfigurer::disable) // HTTP Basic 인증 비활성화
                 // oauth2 로그인
@@ -52,7 +52,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**", "/v3/api-docs/**",
                                 "/api/users/example/{user-id}", // 패키지 구조 예제 코드
                                 "/oauth2/authorization/**", // 카카오 로그인 요청 (/kakao, /google
-                                "/login/oauth2/code/**" // 카카오 인증 콜백
+                                "/login/oauth2/code/**", // 카카오 인증 콜백
+                                "/api/metadata"
                         )
                         .permitAll()
                         .anyRequest().authenticated() // 그외 요청은 허가된 사람만 인가

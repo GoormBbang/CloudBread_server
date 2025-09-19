@@ -12,6 +12,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
+
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -38,7 +40,7 @@ public class User extends BaseEntity {
 
     private String profileImageUrl;
 
-    private int age;
+    private LocalDate birthDate; // 생년월일
 
     @Column(name = "due_date")
     private LocalDate dueDate;
@@ -55,14 +57,14 @@ public class User extends BaseEntity {
     private boolean activated; // soft-delete 구현, 삭제 구현 시 activated = 0 (false)
 
     @Builder
-    public User(Long id, String email, OauthProvider oauthProvider, String nickname, String profileImageUrl, int age,
+    public User(Long id, String email, OauthProvider oauthProvider, String nickname, String profileImageUrl, LocalDate birthDate,
                 LocalDate dueDate, BigDecimal height, BigDecimal weight, String otherHealthFactors, boolean activated) {
         this.id = id;
         this.email = email;
         this.oauthProvider = oauthProvider;
         this.nickname = nickname;
         this.profileImageUrl = profileImageUrl;
-        this.age = age;
+        this.birthDate = birthDate;
         this.dueDate = dueDate;
         this.height = height;
         this.weight = weight;
@@ -78,7 +80,7 @@ public class User extends BaseEntity {
                 .build();
     }
 
-    // 첫번째 회원가입 -> oauth2 회원가입 (email, oauth_provider, nickname, profile_image_url // activated)
+    // 회원가입 STEP1 -> oauth2 회원가입 (email, oauth_provider, nickname, profile_image_url // activated)
     public static User createUserFirstOAuth(String email, String nickname, String profileImageUrl, OauthProvider oauthProvider) {
         return User.builder()
                 .email(email)
@@ -90,10 +92,16 @@ public class User extends BaseEntity {
 
     }
 
-
-    // User 도메인 관련 비즈니스 로직
-    public boolean isAdult(){ // 테스트
-        return this.age >= 20;
+    // 회원가입 STEP2
+    public void updateDetails(LocalDate birthDate, BigDecimal height, BigDecimal weight, LocalDate dueDate){
+        this.birthDate = birthDate;
+        this.height = height;
+        this.weight = weight;
+        this.dueDate = dueDate;
     }
 
+    // 기타 건강상태 업데이트
+    public void updateOtherHealthFactors(String otherHealthFactors){
+        this.otherHealthFactors = otherHealthFactors;
+    }
 }

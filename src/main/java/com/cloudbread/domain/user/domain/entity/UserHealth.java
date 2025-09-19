@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -29,4 +30,18 @@ public class UserHealth extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "health_type_id")
     private HealthType healthType;
+
+    @Builder
+    public UserHealth(Long id, User user, HealthType healthType) {
+        this.id = id;
+        this.user = user;
+        this.healthType = healthType;
+    }
+
+    public static UserHealth of(User user, HealthType healthType) {
+        return UserHealth.builder()
+                .user(user)
+                .healthType(healthType)
+                .build();
+    }
 }
