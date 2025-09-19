@@ -10,8 +10,8 @@ public class UserConverter {
                 .builder()
                 .id(user.getId())
                 .nickname(user.getNickname())
-                .age(user.getAge())
-                .isAdult(user.isAdult())
+         //       .age(user.getAge())
+         //       .isAdult(user.isAdult())
                 .build();
     }
 

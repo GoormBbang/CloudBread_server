@@ -23,9 +23,9 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserException(ErrorStatus.NO_SUCH_USER));
 
         // 도메인 비즈니스 로직 활용 -> 서비스단 부담 완화 / DDD 구조
-        if (!user.isAdult()) {
-            log.info("미성년자 회원입니다.");
-        }
+//        if (!user.isAdult()) {
+//            log.info("미성년자 회원입니다.");
+//        }
         return UserConverter.toExample(user);
     }
 

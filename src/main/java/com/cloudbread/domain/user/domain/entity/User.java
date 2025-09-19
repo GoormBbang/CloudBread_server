@@ -38,7 +38,8 @@ public class User extends BaseEntity {
 
     private String profileImageUrl;
 
-    private int age;
+   // private int age;
+    private LocalDate birthDate; // 생년월일
 
     @Column(name = "due_date")
     private LocalDate dueDate;
@@ -55,14 +56,14 @@ public class User extends BaseEntity {
     private boolean activated; // soft-delete 구현, 삭제 구현 시 activated = 0 (false)
 
     @Builder
-    public User(Long id, String email, OauthProvider oauthProvider, String nickname, String profileImageUrl, int age,
+    public User(Long id, String email, OauthProvider oauthProvider, String nickname, String profileImageUrl, LocalDate birthDate,
                 LocalDate dueDate, BigDecimal height, BigDecimal weight, String otherHealthFactors, boolean activated) {
         this.id = id;
         this.email = email;
         this.oauthProvider = oauthProvider;
         this.nickname = nickname;
         this.profileImageUrl = profileImageUrl;
-        this.age = age;
+        this.birthDate = birthDate;
         this.dueDate = dueDate;
         this.height = height;
         this.weight = weight;
@@ -92,8 +93,8 @@ public class User extends BaseEntity {
 
 
     // User 도메인 관련 비즈니스 로직
-    public boolean isAdult(){ // 테스트
-        return this.age >= 20;
-    }
+//    public boolean isAdult(){ // 테스트
+//        return this.age >= 20;
+//    }
 
 }
