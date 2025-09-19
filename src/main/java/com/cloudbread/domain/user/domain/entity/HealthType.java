@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -24,7 +25,13 @@ public class HealthType extends BaseEntity{
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private HealthTypeEnum name;
+
+    @Builder
+    public HealthType(Long id, HealthTypeEnum name) {
+        this.id = id;
+        this.name = name;
+    }
 }
 

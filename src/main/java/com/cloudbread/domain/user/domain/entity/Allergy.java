@@ -4,6 +4,7 @@ import com.cloudbread.domain.model.BaseEntity;
 import com.cloudbread.domain.user.domain.enums.HealthTypeEnum;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -17,4 +18,10 @@ public class Allergy extends BaseEntity {
     private Long id;
 
     private String name; // 알레르기명
+
+    @Builder
+    public Allergy(Long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
 }
