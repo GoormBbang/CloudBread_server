@@ -1,14 +1,8 @@
 package com.cloudbread.domain.user.application;
 
 import com.cloudbread.domain.user.converter.UserConverter;
-import com.cloudbread.domain.user.domain.entity.Allergy;
-import com.cloudbread.domain.user.domain.entity.DietType;
-import com.cloudbread.domain.user.domain.entity.HealthType;
-import com.cloudbread.domain.user.domain.entity.User;
-import com.cloudbread.domain.user.domain.repository.AllergyRepository;
-import com.cloudbread.domain.user.domain.repository.DietTypeRepository;
-import com.cloudbread.domain.user.domain.repository.HealthTypeRepository;
-import com.cloudbread.domain.user.domain.repository.UserRepository;
+import com.cloudbread.domain.user.domain.entity.*;
+import com.cloudbread.domain.user.domain.repository.*;
 import com.cloudbread.domain.user.dto.UserRequestDto;
 import com.cloudbread.domain.user.dto.UserResponseDto;
 import com.cloudbread.domain.user.exception.UserNotFoundException;
@@ -25,10 +19,15 @@ import java.util.List;
 @Slf4j
 @Transactional
 public class UserServiceImpl implements UserService {
+
     private final UserRepository userRepository;
     private final DietTypeRepository dietTypeRepository;
     private final HealthTypeRepository healthTypeRepository;
     private final AllergyRepository allergyRepository;
+
+    private final UserDietRepository userDietRepository;
+    private final UserHealthRepository userHealthRepository;
+    private final UserAllergyRepository userAllergyRepository;
 
     @Override
     public UserResponseDto.UpdateResponse updateDetails(Long userId, UserRequestDto.UpdateDetailsRequest request) {
@@ -59,6 +58,46 @@ public class UserServiceImpl implements UserService {
                 .allergies(allergyDtoList)
                 .build();
 
+    }
+
+    @Override
+    public UserResponseDto.UpdateResponse updateHealthInfo(Long userId, UserRequestDto.UpdateHealthInfoRequest request) {
+        User user = userRepository.getReferenceById(userId); // User의 엔디티가 아닌 프록시 객체를 가져온다 (성능 최적화, 불필요 쿼리 줄이기)
+
+        // 유효성: 존재하는 id 인지 검증
+        dietTypeRepository.assertAllExist(request.getDietTypeIds());
+        healthTypeRepository.assertAllExist(request.getHealthTypeIds());
+        allergyRepository.assertAllExist(request.getAllergyIds());
+
+        // 기타 건강상태(자유입력) 업데이트
+        user.updateOtherHealthFactors(request.getOtherHealthFactors());
+
+        // 기존 관계 제거 -> 새로 삽입
+        userDietRepository.deleteByUserId(userId);
+        userHealthRepository.deleteByUserId(userId);
+        userAllergyRepository.deleteByUserId(userId);
+
+        // of() 메서드에 엔티티 프록시를 직접 전달
+        if (!request.getDietTypeIds().isEmpty()) {
+            request.getDietTypeIds().forEach(did -> {
+                DietType dietTypeRef = dietTypeRepository.getReferenceById(did);
+                userDietRepository.save(UserDiet.of(user, dietTypeRef));
+            });
+        }
+        if (!request.getHealthTypeIds().isEmpty()) {
+            request.getHealthTypeIds().forEach(hid -> {
+                HealthType healthTypeRef = healthTypeRepository.getReferenceById(hid);
+                userHealthRepository.save(UserHealth.of(user, healthTypeRef));
+            });
+        }
+        if (!request.getAllergyIds().isEmpty()) {
+            request.getAllergyIds().forEach(aid -> {
+                Allergy allergyRef = allergyRepository.getReferenceById(aid);
+                userAllergyRepository.save(UserAllergy.of(user, allergyRef));
+            });
+        }
+
+        return UserConverter.toUpdateResponse(user);
     }
 
     @Override

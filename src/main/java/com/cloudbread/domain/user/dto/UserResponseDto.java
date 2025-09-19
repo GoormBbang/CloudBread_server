@@ -39,7 +39,7 @@ public class UserResponseDto {
     // 메타데이터 (한번에)
     @Builder
     @AllArgsConstructor
-    @NoArgsConstructor // 역직렬화를 위해 기본 생성자 추가
+    @NoArgsConstructor
     @Getter
     public static class MetadataResponse {
         private List<MetadataItemDto> dietTypes;
@@ -50,7 +50,7 @@ public class UserResponseDto {
 
     @Builder
     @AllArgsConstructor
-    @NoArgsConstructor // 역직렬화를 위해 기본 생성자 추가
+    @NoArgsConstructor
     @Getter
     public static class MetadataItemDto {
         private Long id;

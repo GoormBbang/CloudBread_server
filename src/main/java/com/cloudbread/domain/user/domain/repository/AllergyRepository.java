@@ -11,4 +11,9 @@ public interface AllergyRepository extends JpaRepository<Allergy, Long> {
 
     @Query("select a from Allergy a order by a.id")
     List<Allergy> findAllOrderById();
+    long countByIdIn(List<Long> ids);
+    default void assertAllExist(List<Long> ids) {
+        if (!ids.isEmpty() && countByIdIn(ids) != ids.size())
+            throw new IllegalArgumentException("Invalid allergyIds");
+    }
 }

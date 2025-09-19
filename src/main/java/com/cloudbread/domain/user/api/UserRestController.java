@@ -48,6 +48,17 @@ public class UserRestController {
         return BaseResponse.onSuccess(SuccessStatus.USER_METADATA_SUCCESS, result);
     }
 
+    // 회원가입 3차 가입 (마지막)
+    @PutMapping("/users/health-info")
+    public BaseResponse<UserResponseDto.UpdateResponse> updateHealthInfos(
+        @AuthenticationPrincipal CustomOAuth2User customOAuth2User,
+        @RequestBody @Valid UserRequestDto.UpdateHealthInfoRequest request
+    ){
+        Long userId = customOAuth2User.getUserId();
+        UserResponseDto.UpdateResponse result = userService.updateHealthInfo(userId, request);
+
+        return BaseResponse.onSuccess(SuccessStatus.USER_HEALTH_INFO_SUCCESS, result);
+    }
 
     @GetMapping("/users/example/{user-id}")
     public BaseResponse<UserResponseDto.Example> getUser(
@@ -64,7 +75,6 @@ public class UserRestController {
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User
             ){
         User user = customOAuth2User.getUser();
-
         UserResponseDto.SecurityContextDto result = UserResponseDto.SecurityContextDto.builder()
                 .id(user.getId())
                 .email(user.getEmail())

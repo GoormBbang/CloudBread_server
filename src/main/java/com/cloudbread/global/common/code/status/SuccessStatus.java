@@ -19,6 +19,7 @@ public enum SuccessStatus implements BaseCode {
 
     USER_METADATA_SUCCESS(HttpStatus.OK, "MEMBER_202", "회원가입 3단계를 위한 helper API가 정상호출되었습니다."),
 
+    USER_HEALTH_INFO_SUCCESS(HttpStatus.OK, "MEMBER_203", "회원 정보의 건강상태가 성공적으로 업데이트되었습니다."),
     ;
 
     private final HttpStatus httpStatus;

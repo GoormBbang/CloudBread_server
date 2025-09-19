@@ -3,9 +3,11 @@ package com.cloudbread.domain.user.dto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public class UserRequestDto {
 
@@ -20,5 +22,17 @@ public class UserRequestDto {
         private LocalDate dueDate; // 임신시작일
     }
 
+
+    // 회원가입 STEP 3
+    @Builder
+    @AllArgsConstructor
+    @Getter
+    @NoArgsConstructor
+    public static class UpdateHealthInfoRequest {
+        private List<Long> dietTypeIds;
+        private List<Long> healthTypeIds;
+        private List<Long> allergyIds;
+        private String otherHealthFactors;
+    }
 }
 

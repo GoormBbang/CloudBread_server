@@ -3,6 +3,7 @@ package com.cloudbread.domain.user.domain.entity;
 import com.cloudbread.domain.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -23,4 +24,18 @@ public class UserAllergy extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "allergy_id")
     private Allergy allergy;
+
+    @Builder
+    public UserAllergy(Long id, User user, Allergy allergy) {
+        this.id = id;
+        this.user = user;
+        this.allergy = allergy;
+    }
+
+    public static UserAllergy of(User user, Allergy allergy){
+        return UserAllergy.builder()
+                .user(user)
+                .allergy(allergy)
+                .build();
+    }
 }

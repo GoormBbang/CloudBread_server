@@ -100,5 +100,8 @@ public class User extends BaseEntity {
         this.dueDate = dueDate;
     }
 
-
+    // 기타 건강상태 업데이트
+    public void updateOtherHealthFactors(String otherHealthFactors){
+        this.otherHealthFactors = otherHealthFactors;
+    }
 }

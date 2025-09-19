@@ -11,4 +11,10 @@ public interface HealthTypeRepository extends JpaRepository<HealthType, Long> {
     boolean existsByName(HealthTypeEnum type);
     @Query("select h from HealthType h order by h.id")
     List<HealthType> findAllOrderById();
+
+    long countByIdIn(List<Long> ids);
+    default void assertAllExist(List<Long> ids) {
+        if (!ids.isEmpty() && countByIdIn(ids) != ids.size())
+            throw new IllegalArgumentException("Invalid healthTypeIds");
+    }
 }
