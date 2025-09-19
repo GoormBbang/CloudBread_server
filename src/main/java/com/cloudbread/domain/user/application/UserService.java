@@ -7,4 +7,5 @@ public interface UserService {
     UserResponseDto.Example exampleMethod(Long userId);
 
     UserResponseDto.UpdateResponse updateDetails(Long userId, UserRequestDto.UpdateDetailsRequest request);
+    UserResponseDto.MetadataResponse getMetaData();
 }

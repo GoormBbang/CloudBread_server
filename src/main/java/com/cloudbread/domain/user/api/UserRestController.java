@@ -22,13 +22,13 @@ import java.util.Optional;
     아래 /api/users/example//{user-id} 는 샘플 api 이다
  */
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class UserRestController {
     private final UserService userService;
 
-    // 회원가입 STEP2 api
-    @PutMapping("/details")
+    // 회원가입 STEP2
+    @PutMapping("/users/details")
     public BaseResponse<UserResponseDto.UpdateResponse> updateDetails(
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User,
             @RequestBody @Valid UserRequestDto.UpdateDetailsRequest request
@@ -40,7 +40,16 @@ public class UserRestController {
 
     }
 
-    @GetMapping("/example/{user-id}")
+    // 회원가입 STEP3을 위한 메타데이터 호출
+    @GetMapping("/metadata")
+    public BaseResponse<UserResponseDto.MetadataResponse> getMetadata(){
+        UserResponseDto.MetadataResponse result = userService.getMetaData();
+
+        return BaseResponse.onSuccess(SuccessStatus.USER_METADATA_SUCCESS, result);
+    }
+
+
+    @GetMapping("/users/example/{user-id}")
     public BaseResponse<UserResponseDto.Example> getUser(
         @PathVariable(name = "user-id") @Valid @UserExist Long userId
     ){
