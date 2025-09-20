@@ -1,5 +1,6 @@
-package com.cloudbread.auth.token;
+package com.cloudbread.auth.token.domain;
 
+import com.cloudbread.auth.token.domain.Token;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
