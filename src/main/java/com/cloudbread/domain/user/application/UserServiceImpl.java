@@ -108,4 +108,31 @@ public class UserServiceImpl implements UserService {
         return UserConverter.toExample(user);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponseDto.MyInfoResponse getInfo2(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        // userId 기반으로 직접 조회
+        List<UserDiet> userDiets = userDietRepository.findByUserId(userId);
+        List<UserHealth> userHealths = userHealthRepository.findByUserId(userId);
+        List<UserAllergy> userAllergies = userAllergyRepository.findByUserId(userId);
+
+        List<String> dietTypes = userDiets.stream()
+                .map(ud -> ud.getDietType().getName().name()) // DietTypeEnum → String
+                .toList();
+
+        List<String> healthTypes = userHealths.stream()
+                .map(uh -> uh.getHealthType().getName().name()) // HealthTypeEnum → String
+                .toList();
+
+        List<String> allergies = userAllergies.stream()
+                .map(ua -> ua.getAllergy().getName()) // String 그대로
+                .toList();
+
+        return UserConverter.toMyInfoResponse(user, dietTypes, healthTypes, allergies);
+    }
+
+
 }

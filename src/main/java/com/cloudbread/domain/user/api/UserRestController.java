@@ -83,6 +83,16 @@ public class UserRestController {
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("/users/me")
+    public BaseResponse<UserResponseDto.MyInfoResponse> getInfo2(//내 정보 조회
+            @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+    ) {
+        Long userId = customOAuth2User.getUserId();
+        UserResponseDto.MyInfoResponse result = userService.getInfo2(userId);
+
+        return BaseResponse.onSuccess(SuccessStatus.USER_INFO_SUCCESS, result);
+    }
+
 
 }
 

@@ -5,6 +5,7 @@ import com.cloudbread.domain.user.domain.entity.DietType;
 import com.cloudbread.domain.user.domain.entity.HealthType;
 import com.cloudbread.domain.user.domain.entity.User;
 import com.cloudbread.domain.user.dto.UserResponseDto;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,5 +53,25 @@ public class UserConverter {
                         .build())
                 .collect(Collectors.toList());
     }
+
+    public static UserResponseDto.MyInfoResponse toMyInfoResponse(
+            User user,
+            List<String> dietTypes,
+            List<String> healthTypes,
+            List<String> allergies
+    ) {
+        return UserResponseDto.MyInfoResponse.builder()
+                .id(user.getId())
+                .nickname(user.getNickname())
+                .height(user.getHeight() != null ? user.getHeight().doubleValue() : null)
+                .weight(user.getWeight() != null ? user.getWeight().doubleValue() : null)
+                .diets_types(dietTypes)
+                .health_types(healthTypes)
+                .allergies(allergies)
+                .other_health_factors(user.getOtherHealthFactors())
+                .build();
+    }
+
+
 
 }
