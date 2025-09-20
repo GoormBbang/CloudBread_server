@@ -12,6 +12,7 @@ import com.cloudbread.global.common.response.BaseResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.executable.ValidateOnExecution;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -93,12 +94,23 @@ public class UserRestController {
         return BaseResponse.onSuccess(SuccessStatus.USER_INFO_SUCCESS, result);
     }
 
+    @PutMapping("/users/me")
+    public BaseResponse<UserResponseDto.UpdateResponse> updateMyInfo(
+            @AuthenticationPrincipal CustomOAuth2User customOAuth2User,
+            @RequestBody UserRequestDto.UpdateMyInfoRequest request
+    )
+    {
+        Long userId = customOAuth2User.getUserId();
+        UserResponseDto.UpdateResponse response = userService.updateMyInfo(userId, request);
+        return BaseResponse.onSuccess(SuccessStatus.USER_INFO_UPDATE_SUCCESS, response);
+
     // 로그아웃
     @PostMapping("/users/logout")
     public BaseResponse<String> logout(@AuthenticationPrincipal CustomOAuth2User customOAuth2User){
         userService.logout(customOAuth2User.getUserId());
 
         return BaseResponse.onSuccess(SuccessStatus._OK, "logout success!");
+
     }
 
 }

@@ -66,9 +66,17 @@ public class UserResponseDto {
         private String nickname;
         private Double height;
         private Double weight;
-        private List<String> diets_types;
-        private List<String> health_types;
-        private List<String> allergies;
+        private List<MetadataItemDto> dietTypes;
+        private List<MetadataItemDto> healthTypes;
+        private List<MetadataItemDto> allergies;
         private String other_health_factors;
+    }
+
+    @Builder
+    @Getter
+    @AllArgsConstructor
+    public static class UpdateRespnse{//설정화면-내 정보 수정
+        private Long userid;
+        private String massage;
     }
 }

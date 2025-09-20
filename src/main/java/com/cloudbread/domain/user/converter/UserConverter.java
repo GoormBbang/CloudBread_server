@@ -56,21 +56,22 @@ public class UserConverter {
 
     public static UserResponseDto.MyInfoResponse toMyInfoResponse(
             User user,
-            List<String> dietTypes,
-            List<String> healthTypes,
-            List<String> allergies
+            List<UserResponseDto.MetadataItemDto> dietTypes,
+            List<UserResponseDto.MetadataItemDto> healthTypes,
+            List<UserResponseDto.MetadataItemDto> allergies
     ) {
         return UserResponseDto.MyInfoResponse.builder()
                 .id(user.getId())
                 .nickname(user.getNickname())
                 .height(user.getHeight() != null ? user.getHeight().doubleValue() : null)
                 .weight(user.getWeight() != null ? user.getWeight().doubleValue() : null)
-                .diets_types(dietTypes)
-                .health_types(healthTypes)
+                .dietTypes(dietTypes)
+                .healthTypes(healthTypes)
                 .allergies(allergies)
                 .other_health_factors(user.getOtherHealthFactors())
                 .build();
     }
+
 
 
 

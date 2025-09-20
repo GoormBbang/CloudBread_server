@@ -100,4 +100,8 @@ public class User extends BaseEntity {
     public void updateOtherHealthFactors(String otherHealthFactors){
         this.otherHealthFactors = otherHealthFactors;
     }
+
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
 }
