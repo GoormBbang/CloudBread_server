@@ -1,4 +1,4 @@
-package com.cloudbread.domain.food.enums;
+package com.cloudbread.domain.food.domain.enums;
 
 public enum NutrientType {
     CARBS, // 탄수화물

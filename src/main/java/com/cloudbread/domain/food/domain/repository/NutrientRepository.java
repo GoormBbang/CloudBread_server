@@ -1,6 +1,6 @@
-package com.cloudbread.domain.food.repository;
+package com.cloudbread.domain.food.domain.repository;
 
-import com.cloudbread.domain.food.domain.Nutrient;
+import com.cloudbread.domain.food.domain.entity.Nutrient;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
