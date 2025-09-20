@@ -1,5 +1,9 @@
 # spring config
 spring:
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   config:
     import: application-secret.yml
 
@@ -7,7 +11,7 @@ spring:
 # Swagger config
 # 로컬 Swagger 접근 url -> http://localhost:8080/swagger-ui/index.html
 springdoc:
-  packages-to-scan: com.cloudbread.domain
+  packages-to-scan: com.cloudbread
   default-consumes-media-type: application/json;charset=UTF-8
   default-produces-media-type: application/json;charset=UTF-8
   swagger-ui:

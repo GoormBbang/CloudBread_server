@@ -42,4 +42,14 @@ public class Food extends BaseEntity {
         this.externalId = externalId;
         this.calories = calories;
     }
+
+    public boolean merge(String name, String sourceName, BigDecimal calories) {
+        boolean changed = false;
+        if (name != null && !name.equals(this.name)) { this.name = name; changed = true; }
+        if (sourceName != null && !sourceName.equals(this.sourceName)) { this.sourceName = sourceName; changed = true; }
+        if (calories != null && (this.calories == null || this.calories.compareTo(calories)!=0)) {
+            this.calories = calories; changed = true;
+        }
+        return changed;
+    }
 }

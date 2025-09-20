@@ -36,4 +36,13 @@ public class FoodNutrient extends BaseEntity {
         this.nutrient = nutrient;
         this.value = value;
     }
+
+    public boolean updateValueIfChanged(BigDecimal newValue) {
+        if (newValue == null) return false;
+        if (this.value == null || this.value.compareTo(newValue) != 0) {
+            this.value = newValue;
+            return true;
+        }
+        return false;
+    }
 }

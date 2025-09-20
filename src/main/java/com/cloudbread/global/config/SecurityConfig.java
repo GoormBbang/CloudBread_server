@@ -53,7 +53,8 @@ public class SecurityConfig {
                                 "/api/users/example/{user-id}", // 패키지 구조 예제 코드
                                 "/oauth2/authorization/**", // 카카오 로그인 요청 (/kakao, /google
                                 "/login/oauth2/code/**", // 카카오 인증 콜백
-                                "/api/metadata"
+                                "/api/metadata",
+                                "/api/admin/foods/import" // foods 데이터 seeder
                         )
                         .permitAll()
                         .anyRequest().authenticated() // 그외 요청은 허가된 사람만 인가
