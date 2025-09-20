@@ -8,4 +8,5 @@ public interface UserService {
     UserResponseDto.UpdateResponse updateDetails(Long userId, UserRequestDto.UpdateDetailsRequest request);
     UserResponseDto.MetadataResponse getMetaData();
     UserResponseDto.UpdateResponse updateHealthInfo(Long userId, UserRequestDto.UpdateHealthInfoRequest request);
+    UserResponseDto.MyInfoResponse getInfo2(Long userId);
 }

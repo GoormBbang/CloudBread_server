@@ -57,4 +57,18 @@ public class UserResponseDto {
         private String name;
     }
 
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Getter
+    public static class MyInfoResponse {//내 정보 조회
+        private Long id;
+        private String nickname;
+        private Double height;
+        private Double weight;
+        private List<String> diets_types;
+        private List<String> health_types;
+        private List<String> allergies;
+        private String other_health_factors;
+    }
 }
