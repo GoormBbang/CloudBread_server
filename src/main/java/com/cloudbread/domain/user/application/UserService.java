@@ -9,5 +9,9 @@ public interface UserService {
     UserResponseDto.MetadataResponse getMetaData();
     UserResponseDto.UpdateResponse updateHealthInfo(Long userId, UserRequestDto.UpdateHealthInfoRequest request);
     UserResponseDto.MyInfoResponse getInfo2(Long userId);
+
     UserResponseDto.UpdateResponse updateMyInfo(Long userId, UserRequestDto.UpdateMyInfoRequest request);
+
+    void logout(Long userId);
+
 }

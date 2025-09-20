@@ -1,5 +1,8 @@
 package com.cloudbread.domain.user.application;
 
+import com.cloudbread.auth.token.domain.Token;
+import com.cloudbread.auth.token.domain.TokenRepository;
+import com.cloudbread.auth.token.exception.RefreshTokenNotFoundException;
 import com.cloudbread.domain.user.converter.UserConverter;
 import com.cloudbread.domain.user.domain.entity.*;
 import com.cloudbread.domain.user.domain.enums.DietTypeEnum;
@@ -30,6 +33,8 @@ public class UserServiceImpl implements UserService {
     private final UserDietRepository userDietRepository;
     private final UserHealthRepository userHealthRepository;
     private final UserAllergyRepository userAllergyRepository;
+
+    private final TokenRepository tokenRepository;
 
     @Override
     public UserResponseDto.UpdateResponse updateDetails(Long userId, UserRequestDto.UpdateDetailsRequest request) {
@@ -149,6 +154,7 @@ public class UserServiceImpl implements UserService {
     }
 
 
+
     @Override
     @Transactional
     public UserResponseDto.UpdateResponse updateMyInfo(Long userId, UserRequestDto.UpdateMyInfoRequest request) {
@@ -206,5 +212,13 @@ public class UserServiceImpl implements UserService {
     }
 
 
+
+
+    @Override
+    public void logout(Long userId) {
+        Token token = tokenRepository.findByUserId(userId)
+                .orElseThrow(() -> new RefreshTokenNotFoundException());
+        tokenRepository.delete(token);
+    }
 
 }
