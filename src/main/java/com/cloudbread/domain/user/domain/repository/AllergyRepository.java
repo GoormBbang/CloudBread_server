@@ -1,14 +1,16 @@
 package com.cloudbread.domain.user.domain.repository;
 
 import com.cloudbread.domain.user.domain.entity.Allergy;
+import com.cloudbread.domain.user.domain.entity.DietType;
+import com.cloudbread.domain.user.domain.enums.DietTypeEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface AllergyRepository extends JpaRepository<Allergy, Long> {
     boolean existsByName(String name);
-
     @Query("select a from Allergy a order by a.id")
     List<Allergy> findAllOrderById();
     long countByIdIn(List<Long> ids);

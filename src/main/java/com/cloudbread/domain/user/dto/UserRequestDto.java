@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.rmi.registry.LocateRegistry;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -29,6 +30,22 @@ public class UserRequestDto {
     @Getter
     @NoArgsConstructor
     public static class UpdateHealthInfoRequest {
+        private List<Long> dietTypeIds;
+        private List<Long> healthTypeIds;
+        private List<Long> allergyIds;
+        private String otherHealthFactors;
+    }
+
+    //설정화면 - 내 정보 수정
+    @Builder
+    @AllArgsConstructor
+    @Getter
+    @NoArgsConstructor
+    public static class UpdateMyInfoRequest {
+        private String nickname;//이름
+        private LocalDate dueDate;//임신시작일
+        private BigDecimal height;
+        private BigDecimal weight;
         private List<Long> dietTypeIds;
         private List<Long> healthTypeIds;
         private List<Long> allergyIds;

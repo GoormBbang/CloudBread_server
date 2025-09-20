@@ -2,6 +2,8 @@ package com.cloudbread.domain.user.application;
 
 import com.cloudbread.domain.user.converter.UserConverter;
 import com.cloudbread.domain.user.domain.entity.*;
+import com.cloudbread.domain.user.domain.enums.DietTypeEnum;
+import com.cloudbread.domain.user.domain.enums.HealthTypeEnum;
 import com.cloudbread.domain.user.domain.repository.*;
 import com.cloudbread.domain.user.dto.UserRequestDto;
 import com.cloudbread.domain.user.dto.UserResponseDto;
@@ -119,20 +121,90 @@ public class UserServiceImpl implements UserService {
         List<UserHealth> userHealths = userHealthRepository.findByUserId(userId);
         List<UserAllergy> userAllergies = userAllergyRepository.findByUserId(userId);
 
-        List<String> dietTypes = userDiets.stream()
-                .map(ud -> ud.getDietType().getName().name()) // DietTypeEnum → String
+        // dietType → id + name
+        List<UserResponseDto.MetadataItemDto> dietTypes = userDiets.stream()
+                .map(ud -> UserResponseDto.MetadataItemDto.builder()
+                        .id(ud.getDietType().getId())
+                        .name(ud.getDietType().getName().name()) // Enum → String
+                        .build())
                 .toList();
 
-        List<String> healthTypes = userHealths.stream()
-                .map(uh -> uh.getHealthType().getName().name()) // HealthTypeEnum → String
+        // healthType → id + name
+        List<UserResponseDto.MetadataItemDto> healthTypes = userHealths.stream()
+                .map(uh -> UserResponseDto.MetadataItemDto.builder()
+                        .id(uh.getHealthType().getId())
+                        .name(uh.getHealthType().getName().name())
+                        .build())
                 .toList();
 
-        List<String> allergies = userAllergies.stream()
-                .map(ua -> ua.getAllergy().getName()) // String 그대로
+        // allergy → id + name
+        List<UserResponseDto.MetadataItemDto> allergies = userAllergies.stream()
+                .map(ua -> UserResponseDto.MetadataItemDto.builder()
+                        .id(ua.getAllergy().getId())
+                        .name(ua.getAllergy().getName()) // String 그대로
+                        .build())
                 .toList();
 
         return UserConverter.toMyInfoResponse(user, dietTypes, healthTypes, allergies);
     }
+
+
+    @Override
+    @Transactional
+    public UserResponseDto.UpdateResponse updateMyInfo(Long userId, UserRequestDto.UpdateMyInfoRequest request) {
+        // 유저 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        // 기본 정보 업데이트
+        user.updateDetails(
+                null,
+                request.getHeight(),
+                request.getWeight(),
+                request.getDueDate()
+        );
+
+        if (request.getNickname() != null) {
+            user.updateNickname(request.getNickname());
+        }
+
+        user.updateOtherHealthFactors(request.getOtherHealthFactors());
+
+        // 기존 관계 삭제
+        userDietRepository.deleteByUserId(userId);
+        userHealthRepository.deleteByUserId(userId);
+        userAllergyRepository.deleteByUserId(userId);
+
+        // dietType 업데이트 (id 기반)
+        if (request.getDietTypeIds() != null && !request.getDietTypeIds().isEmpty()) {
+            request.getDietTypeIds().forEach(dietTypeId -> {
+                DietType dietType = dietTypeRepository.findById(dietTypeId)
+                        .orElseThrow(() -> new IllegalArgumentException("Invalid dietTypeId: " + dietTypeId));
+                userDietRepository.save(UserDiet.of(user, dietType));
+            });
+        }
+
+        // healthType 업데이트 (id 기반)
+        if (request.getHealthTypeIds() != null && !request.getHealthTypeIds().isEmpty()) {
+            request.getHealthTypeIds().forEach(healthTypeId -> {
+                HealthType healthType = healthTypeRepository.findById(healthTypeId)
+                        .orElseThrow(() -> new IllegalArgumentException("Invalid healthTypeId: " + healthTypeId));
+                userHealthRepository.save(UserHealth.of(user, healthType));
+            });
+        }
+
+        // allergy 업데이트 (id 기반)
+        if (request.getAllergyIds() != null && !request.getAllergyIds().isEmpty()) {
+            request.getAllergyIds().forEach(allergyId -> {
+                Allergy allergy = allergyRepository.findById(allergyId)
+                        .orElseThrow(() -> new IllegalArgumentException("Invalid allergyId: " + allergyId));
+                userAllergyRepository.save(UserAllergy.of(user, allergy));
+            });
+        }
+
+        return UserConverter.toUpdateResponse(user);
+    }
+
 
 
 }
