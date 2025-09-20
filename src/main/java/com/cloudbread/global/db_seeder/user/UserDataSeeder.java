@@ -1,4 +1,4 @@
-package com.cloudbread.global.db_seeder;
+package com.cloudbread.global.db_seeder.user;
 
 import com.cloudbread.domain.user.domain.entity.Allergy;
 import com.cloudbread.domain.user.domain.entity.DietType;
