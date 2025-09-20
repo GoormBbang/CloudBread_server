@@ -1,4 +1,4 @@
-package com.cloudbread.auth.token;
+package com.cloudbread.auth.token.domain;
 
 import com.cloudbread.domain.model.BaseEntity;
 import com.cloudbread.domain.user.domain.entity.User;

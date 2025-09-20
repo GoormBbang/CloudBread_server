@@ -93,6 +93,13 @@ public class UserRestController {
         return BaseResponse.onSuccess(SuccessStatus.USER_INFO_SUCCESS, result);
     }
 
+    // 로그아웃
+    @PostMapping("/users/logout")
+    public BaseResponse<String> logout(@AuthenticationPrincipal CustomOAuth2User customOAuth2User){
+        userService.logout(customOAuth2User.getUserId());
+
+        return BaseResponse.onSuccess(SuccessStatus._OK, "logout success!");
+    }
 
 }
 

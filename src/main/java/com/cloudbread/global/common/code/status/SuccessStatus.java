@@ -21,7 +21,10 @@ public enum SuccessStatus implements BaseCode {
 
     USER_HEALTH_INFO_SUCCESS(HttpStatus.OK, "MEMBER_203", "회원 정보의 건강상태가 성공적으로 업데이트되었습니다."),
 
-    USER_INFO_SUCCESS(HttpStatus.OK, "USER_200","성공적으로 내 정보를 조회했습니다." );
+    USER_INFO_SUCCESS(HttpStatus.OK, "USER_200","성공적으로 내 정보를 조회했습니다." ),
+
+    // token
+    TOKEN_REISSUE_SUCCESS(HttpStatus.OK, "TOKEN_300", "토큰이 정상적으로 재발급되었습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

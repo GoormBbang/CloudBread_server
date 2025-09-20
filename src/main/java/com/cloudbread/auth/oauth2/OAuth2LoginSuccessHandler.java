@@ -1,8 +1,8 @@
 package com.cloudbread.auth.oauth2;
 
 import com.cloudbread.auth.jwt.JwtUtil;
-import com.cloudbread.auth.token.Token;
-import com.cloudbread.auth.token.TokenRepository;
+import com.cloudbread.auth.token.domain.Token;
+import com.cloudbread.auth.token.domain.TokenRepository;
 import com.cloudbread.domain.user.domain.entity.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.time.LocalDateTime;

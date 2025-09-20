@@ -54,7 +54,8 @@ public class SecurityConfig {
                                 "/oauth2/authorization/**", // 카카오 로그인 요청 (/kakao, /google
                                 "/login/oauth2/code/**", // 카카오 인증 콜백
                                 "/api/metadata",
-                                "/api/admin/foods/import" // foods 데이터 seeder
+                                "/api/admin/foods/import", // foods 데이터 seeder,
+                                "/api/refresh-token" // refresh token (토큰 갱신)
                         )
                         .permitAll()
                         .anyRequest().authenticated() // 그외 요청은 허가된 사람만 인가
