@@ -1,6 +1,5 @@
-package com.cloudbread.domain.food.domain;
+package com.cloudbread.domain.food.domain.entity;
 
-import com.cloudbread.domain.food.enums.Unit;
 import com.cloudbread.domain.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

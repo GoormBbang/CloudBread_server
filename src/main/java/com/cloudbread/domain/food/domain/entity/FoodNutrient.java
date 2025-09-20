@@ -1,4 +1,4 @@
-package com.cloudbread.domain.food.domain;
+package com.cloudbread.domain.food.domain.entity;
 
 
 import com.cloudbread.domain.model.BaseEntity;

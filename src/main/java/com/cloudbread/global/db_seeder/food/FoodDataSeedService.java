@@ -1,13 +1,12 @@
 package com.cloudbread.global.db_seeder.food;
 
-import com.cloudbread.domain.food.domain.Food;
-import com.cloudbread.domain.food.domain.FoodNutrient;
-import com.cloudbread.domain.food.domain.Nutrient;
-import com.cloudbread.domain.food.enums.NutrientType;
-import com.cloudbread.domain.food.enums.Unit;
-import com.cloudbread.domain.food.repository.FoodNutrientRepository;
-import com.cloudbread.domain.food.repository.FoodRepository;
-import com.cloudbread.domain.food.repository.NutrientRepository;
+import com.cloudbread.domain.food.domain.entity.Food;
+import com.cloudbread.domain.food.domain.entity.FoodNutrient;
+import com.cloudbread.domain.food.domain.entity.Nutrient;
+import com.cloudbread.domain.food.domain.enums.Unit;
+import com.cloudbread.domain.food.domain.repository.FoodNutrientRepository;
+import com.cloudbread.domain.food.domain.repository.FoodRepository;
+import com.cloudbread.domain.food.domain.repository.NutrientRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
