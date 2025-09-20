@@ -98,11 +98,11 @@ public class UserRestController {
     public BaseResponse<UserResponseDto.UpdateResponse> updateMyInfo(
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User,
             @RequestBody UserRequestDto.UpdateMyInfoRequest request
-    )
-    {
+    ) {
         Long userId = customOAuth2User.getUserId();
         UserResponseDto.UpdateResponse response = userService.updateMyInfo(userId, request);
         return BaseResponse.onSuccess(SuccessStatus.USER_INFO_UPDATE_SUCCESS, response);
+    }
 
     // 로그아웃
     @PostMapping("/users/logout")
