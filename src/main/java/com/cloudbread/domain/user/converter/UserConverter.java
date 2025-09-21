@@ -72,7 +72,14 @@ public class UserConverter {
                 .build();
     }
 
-
+    public static UserResponseDto.UserSummaryResponse toUserSummaryResponse(User user) {
+        return UserResponseDto.UserSummaryResponse.builder()
+                .id(user.getId())
+                .nickname(user.getNickname())
+                .profileImageUrl(user.getProfileImageUrl())
+                .dueDate(user.getDueDate())
+                .build();
+    }
 
 
 }

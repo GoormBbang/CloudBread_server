@@ -211,6 +211,13 @@ public class UserServiceImpl implements UserService {
         return UserConverter.toUpdateResponse(user);
     }
 
+    @Override
+    public UserResponseDto.UserSummaryResponse getUserSummary(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        return UserConverter.toUserSummaryResponse(user);
+    }
 
 
 

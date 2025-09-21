@@ -94,7 +94,7 @@ public class UserRestController {
         return BaseResponse.onSuccess(SuccessStatus.USER_INFO_SUCCESS, result);
     }
 
-    @PutMapping("/users/me")
+    @PutMapping("/users/me")//내 정보 수정
     public BaseResponse<UserResponseDto.UpdateResponse> updateMyInfo(
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User,
             @RequestBody UserRequestDto.UpdateMyInfoRequest request
@@ -104,6 +104,17 @@ public class UserRestController {
         return BaseResponse.onSuccess(SuccessStatus.USER_INFO_UPDATE_SUCCESS, response);
     }
 
+    @GetMapping("/users/user-summary")
+    public BaseResponse<UserResponseDto.UserSummaryResponse> getUserSummary(
+            @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+    ) {
+        Long userId = customOAuth2User.getUserId();
+        UserResponseDto.UserSummaryResponse result = userService.getUserSummary(userId);
+
+        return BaseResponse.onSuccess(SuccessStatus.USER_INFO_SUCCESS, result);
+    }
+
+
     // 로그아웃
     @PostMapping("/users/logout")
     public BaseResponse<String> logout(@AuthenticationPrincipal CustomOAuth2User customOAuth2User){
@@ -112,6 +123,7 @@ public class UserRestController {
         return BaseResponse.onSuccess(SuccessStatus._OK, "logout success!");
 
     }
+
 
 }
 
