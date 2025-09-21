@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class UserResponseDto {
@@ -78,5 +79,17 @@ public class UserResponseDto {
     public static class UpdateRespnse{//설정화면-내 정보 수정
         private Long userid;
         private String massage;
+    }
+
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Getter
+    public static class UserSummaryResponse {//메인-로그인한 사용자 정보 조회
+        private Long id;
+        private String nickname;
+        private String profileImageUrl;
+        private LocalDate dueDate;
+
     }
 }
