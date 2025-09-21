@@ -109,4 +109,9 @@ public class User extends BaseEntity {
     public void updateBirthDate(LocalDate birthDate) {
         this.birthDate = birthDate;
     }
+
+    //회원 탈퇴
+    public void deactivate() {
+        this.activated = false;
+    }
 }

@@ -252,4 +252,18 @@ public class UserServiceImpl implements UserService {
         tokenRepository.delete(token);
     }
 
+    @Override
+    @Transactional
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (!user.isActivated()) {
+            throw new UserAlreadyDeactivatedException();
+        }
+
+        user.deactivate(); // activated = false
+    }
+
+
 }
