@@ -219,6 +219,30 @@ public class UserServiceImpl implements UserService {
         return UserConverter.toUserSummaryResponse(user);
     }
 
+    @Override
+    @Transactional
+    public UserResponseDto.UpdateUserSummaryResponse updateUserSummary(
+            Long userId,
+            UserRequestDto.UpdateUserSummaryRequest request
+    ) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        // 닉네임 수정
+        if (request.getNickname() != null) {
+            user.updateNickname(request.getNickname());
+        }
+
+        // 생년월일 수정
+        if (request.getBirthDate() != null) {
+            user.updateBirthDate(request.getBirthDate());
+        }
+
+        return UserConverter.toUpdateUserSummaryResponse(user);
+    }
+
+
+
 
 
     @Override

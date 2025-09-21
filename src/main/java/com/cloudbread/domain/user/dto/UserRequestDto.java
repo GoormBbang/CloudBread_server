@@ -51,5 +51,16 @@ public class UserRequestDto {
         private List<Long> allergyIds;
         private String otherHealthFactors;
     }
+
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Getter
+    public static class UpdateUserSummaryRequest {//메인-내 정보 수정
+        private String nickname;
+        private LocalDate birthDate; // 생년월일
+    }
+
+
 }
 

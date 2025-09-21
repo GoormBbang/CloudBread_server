@@ -104,4 +104,9 @@ public class User extends BaseEntity {
     public void updateNickname(String nickname) {
         this.nickname = nickname;
     }
+
+    //생년월일 업데이트
+    public void updateBirthDate(LocalDate birthDate) {
+        this.birthDate = birthDate;
+    }
 }

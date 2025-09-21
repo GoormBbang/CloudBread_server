@@ -92,4 +92,14 @@ public class UserResponseDto {
         private LocalDate dueDate;
 
     }
+
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Getter
+    public static class UpdateUserSummaryResponse {// 메인-내 정보 수정
+        private Long id;
+        private LocalDate birthDate;
+    }
+
 }
