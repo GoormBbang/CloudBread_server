@@ -136,6 +136,15 @@ public class UserRestController {
 
     }
 
+    //회원 탈퇴
+    @DeleteMapping("/users/me")
+    public BaseResponse<String> deleteUser(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
+        Long userId = customOAuth2User.getUserId();
+        userService.deleteUser(userId);
+
+        return BaseResponse.onSuccess(SuccessStatus.USER_DELETE_SUCCESS, null);
+    }
+
 
 }
 

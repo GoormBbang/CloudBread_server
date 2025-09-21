@@ -96,6 +96,13 @@ public class User extends BaseEntity {
         this.dueDate = dueDate;
     }
 
+    // 오버로딩 (birthDate 없이 height, weight, dueDate만 업데이트)
+    public void updateDetails(BigDecimal height, BigDecimal weight, LocalDate dueDate){
+        if (height != null) this.height = height;
+        if (weight != null) this.weight = weight;
+        if (dueDate != null) this.dueDate = dueDate;
+    }
+
     // 기타 건강상태 업데이트
     public void updateOtherHealthFactors(String otherHealthFactors){
         this.otherHealthFactors = otherHealthFactors;
@@ -108,5 +115,10 @@ public class User extends BaseEntity {
     //생년월일 업데이트
     public void updateBirthDate(LocalDate birthDate) {
         this.birthDate = birthDate;
+    }
+
+    //회원 탈퇴
+    public void deactivate() {
+        this.activated = false;
     }
 }

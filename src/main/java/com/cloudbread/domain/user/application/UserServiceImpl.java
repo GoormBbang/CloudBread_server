@@ -10,6 +10,7 @@ import com.cloudbread.domain.user.domain.enums.HealthTypeEnum;
 import com.cloudbread.domain.user.domain.repository.*;
 import com.cloudbread.domain.user.dto.UserRequestDto;
 import com.cloudbread.domain.user.dto.UserResponseDto;
+import com.cloudbread.domain.user.exception.UserAlreadyDeactivatedException;
 import com.cloudbread.domain.user.exception.UserNotFoundException;
 import com.cloudbread.global.common.code.status.ErrorStatus;
 import lombok.RequiredArgsConstructor;
@@ -164,7 +165,6 @@ public class UserServiceImpl implements UserService {
 
         // 기본 정보 업데이트
         user.updateDetails(
-                null,
                 request.getHeight(),
                 request.getWeight(),
                 request.getDueDate()
@@ -251,5 +251,19 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RefreshTokenNotFoundException());
         tokenRepository.delete(token);
     }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (!user.isActivated()) {
+            throw new UserAlreadyDeactivatedException();
+        }
+
+        user.deactivate(); // activated = false
+    }
+
 
 }

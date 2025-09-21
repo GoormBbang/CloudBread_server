@@ -17,4 +17,6 @@ public interface UserService {
 
     void logout(Long userId);
 
+    void deleteUser(Long userId);
+
 }
