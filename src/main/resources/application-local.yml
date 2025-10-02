@@ -1,0 +1,4 @@
+# application-local.yml -> 기존 .gitignore에 추가된 application-secret.yml을 그대로 쓴다
+spring:
+  config:
+    import: application-secret.yml
