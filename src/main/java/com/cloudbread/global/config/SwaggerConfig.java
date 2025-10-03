@@ -6,11 +6,15 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class SwaggerConfig {
+
+    @Value("${swagger.server-url:}")
+    private String swaggerServerUrl;
 
     @Bean
     public OpenAPI openAPI(){
@@ -34,12 +38,17 @@ public class SwaggerConfig {
                         .in(SecurityScheme.In.HEADER));
 
 
-        return new OpenAPI()
-                .addServersItem(new Server().url("http://localhost:8080")) // 추가적인 서버 URL 설정 가능
+        OpenAPI api = new OpenAPI()
                 .info(info)
                 .addSecurityItem(securityRequirement)
                 .components(components);
 
+        // ★ 배포/로컬별 서버 URL 주입 (비어있으면 추가하지 않음 = 현재 호스트 사용)
+        if (swaggerServerUrl != null && !swaggerServerUrl.isBlank()) {
+            api.addServersItem(new Server().url(swaggerServerUrl));
+        }
+
+        return api;
     }
 
 }

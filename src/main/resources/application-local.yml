@@ -2,3 +2,8 @@
 spring:
   config:
     import: application-secret.yml
+
+
+# application-local.yml
+swagger:
+  server-url: http://localhost:8080
