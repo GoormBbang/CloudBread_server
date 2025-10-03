@@ -59,6 +59,10 @@ dependencies {
 
     //crawling
     implementation 'org.seleniumhq.selenium:selenium-java:4.25.0'
+    implementation 'org.jsoup:jsoup:1.17.2'
+    implementation 'org.apache.poi:poi:5.2.3'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
+
 
 
 }

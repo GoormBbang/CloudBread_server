@@ -26,20 +26,15 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        log.info("JwtAuthorizationFitler 이건 언제 호출해 ??");
-        log.info("JwtAuthorizationFilter 요청 URI: {}", request.getRequestURI());
 
         String header = request.getHeader("Authorization");
 
         // 인증헤더 Bearer가 없다면, 다음 필터로 넘김
         if (header == null || !header.startsWith("Bearer ")){
             filterChain.doFilter(request, response);
-
-            log.info("JwtAuthorizationFilter 1 ");
             return ;
         }
 
-        log.info("header :: {}, header.substring(7) :: {}", header, header.substring(7));
         String accessToken = header.substring(7);
 
 
@@ -52,7 +47,6 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().print("access token expired");
 
-            log.info("JwtAuthorizationFilter 2 ");
             return;
         }
 
@@ -64,7 +58,6 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().print("invalid access token");
 
-            log.info("JwtAuthorizationFilter 3 ");
             return;
         }
 
@@ -83,7 +76,6 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         // 생성한 인증 정보를 SecurityContext에 설정
         SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
 
-        log.info("JwtAuthorizationFilter 4 ");
 
         filterChain.doFilter(request, response);
 
