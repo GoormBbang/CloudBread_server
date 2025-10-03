@@ -1,15 +1,14 @@
-# spring config
+# application.yml - 공통, 기본 프로파일
 spring:
+  profiles:
+    default: local
+
   servlet:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
-  config:
-    import: application-secret.yml
 
 
-# Swagger config
-# 로컬 Swagger 접근 url -> http://localhost:8080/swagger-ui/index.html
 springdoc:
   packages-to-scan: com.cloudbread
   default-consumes-media-type: application/json;charset=UTF-8
@@ -19,3 +18,14 @@ springdoc:
     disable-swagger-default-url: true
     display-request-duration: true
     operations-sorter: alpha
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
