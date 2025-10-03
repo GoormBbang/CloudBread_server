@@ -40,3 +40,6 @@ out/
 src/main/resources/application-secret.yml
 
 /drivers/
+=======
+## 배포용 환경변수 파일 추가
+.env.prod
