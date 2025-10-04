@@ -137,9 +137,9 @@ public class FoodDataSeedService {
 
             for (int r = 1; r <= sh.getLastRowNum(); r++) {
                 // 테스트 -> 30개만 먼저 처리
-                if (r > 30){
-                    break;
-                }
+//                if (r > 30){
+//                    break;
+//                }
 
                 // 루프로 두번째 행 ~ 마지막 행까지 한줄씩 순회하며 데이터 읽기
                 Row row = sh.getRow(r);
