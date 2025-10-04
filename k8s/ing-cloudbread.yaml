@@ -6,6 +6,7 @@ metadata:
   annotations:
     # / 로 들어온 요청을 서비스로 그대로 넘김(서브경로 쓰면 rewrite 사용)
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"   # 허용 크기 50MB
 spec:
   ingressClassName: nginx     # 클러스터에 있는 ingress-nginx 컨트롤러 사용
   rules:
