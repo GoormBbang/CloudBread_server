@@ -14,7 +14,6 @@ public interface UserService {
     UserResponseDto.UserSummaryResponse getUserSummary(Long userId);
     UserResponseDto.UpdateUserSummaryResponse updateUserSummary(Long userId, UserRequestDto.UpdateUserSummaryRequest request);
 
-
     void logout(Long userId);
 
     void deleteUser(Long userId);

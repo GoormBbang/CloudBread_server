@@ -102,4 +102,22 @@ public class UserResponseDto {
         private LocalDate birthDate;
     }
 
+    @Builder
+    @Getter
+    @AllArgsConstructor
+    public static class TipResponse {//이번주차팁 전체조회
+        private int week_number;
+        private List<TipDto> tips;
+    }
+
+    @Builder
+    @Getter
+    @AllArgsConstructor
+    public static class TipDto {//이번주차팁-태아,임산부,영양 조회시 사용
+        private Long id;
+        private String kind;      // BABY, MOM, NUTRITION
+        private String title;
+        private String description;
+    }
+
 }
