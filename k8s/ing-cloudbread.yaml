@@ -7,6 +7,9 @@ metadata:
     # / 로 들어온 요청을 서비스로 그대로 넘김(서브경로 쓰면 rewrite 사용)
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"   # 허용 크기 50MB
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"     # 업스트림(스프링)에서 응답 바이트를 읽는 사이사이 대기시간 한도
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"     # NGINX→업스트림으로 요청/바디 전송하는 사이사이 대기시간 한도
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "120"   # 업스트림과 TCP 연결 맺는 시간 한도
 spec:
   ingressClassName: nginx     # 클러스터에 있는 ingress-nginx 컨트롤러 사용
   rules:
