@@ -1,267 +1,246 @@
 package com.cloudbread.global.db_seeder.food;
 
-import com.cloudbread.domain.food.domain.entity.Food;
-import com.cloudbread.domain.food.domain.entity.FoodNutrient;
-import com.cloudbread.domain.food.domain.entity.Nutrient;
+import com.cloudbread.domain.food.domain.entity.*;
 import com.cloudbread.domain.food.domain.enums.Unit;
-import com.cloudbread.domain.food.domain.repository.FoodNutrientRepository;
-import com.cloudbread.domain.food.domain.repository.FoodRepository;
-import com.cloudbread.domain.food.domain.repository.NutrientRepository;
+import com.cloudbread.domain.food.domain.repository.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ooxml.util.SAXHelper;                     // ✅ 핵심
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
+import org.apache.poi.xssf.eventusermodel.XSSFReader;
+import org.apache.poi.xssf.model.CommentsTable;
+import org.apache.poi.xssf.model.SharedStrings;
+import org.apache.poi.xssf.model.StylesTable;
+import org.apache.poi.xssf.usermodel.XSSFComment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.*;
 
-// 실제 DB 저장 로직, bulk insert (성능을 위해)
-/*
-   - 엑셀표의 헤더는 한글 컬럼명 그대로 사용
-   - 단위는 헤더 괄호에서 자동 추출 (g, mg, μg). μ(마이크로) 문자는 µ/μ/ug 다양한 표기가 있어 전부 정규화.
-   - Nutrient가 없으면 자동 생성
-
- */
 @Service
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
 public class FoodDataSeedService {
+
     private final FoodRepository foodRepository;
     private final NutrientRepository nutrientRepository;
     private final FoodNutrientRepository foodNutrientRepository;
 
-    /**
-     * MySQL 전용: FK 체크 끄고 필요한 테이블을 TRUNCATE 한 뒤 다시 켠다.
-     * TRUNCATE는 DDL이라 autocommit이 일어나니 예외가 나든 말든 FK는 반드시 다시 켜지도록 try/finally 처리.
-     */
-    private void resetTables(ResetMode mode) {
-        if (mode == ResetMode.NONE) return;
+    @PersistenceContext
+    private EntityManager em;
 
-        log.warn("[FoodSeed] Reset tables start. Mode = {}", mode);
-        try {
-            em.createNativeQuery("SET FOREIGN_KEY_CHECKS=0").executeUpdate();
-
-            // 참조 테이블부터
-            em.createNativeQuery("TRUNCATE TABLE food_nutrients").executeUpdate();
-
-            if (mode == ResetMode.ALL) {
-                em.createNativeQuery("TRUNCATE TABLE nutrients").executeUpdate();
-            }
-        } finally {
-            em.createNativeQuery("SET FOREIGN_KEY_CHECKS=1").executeUpdate();
-            log.warn("[FoodSeed] Reset tables done.");
-        }
-    }
-
-    /**
-     * resetMode 파라미터로 리셋 범위를 결정.
-     *  - 개발 중 재시드: ResetMode.ALL
-     *  - 운영(마스터 고정): ResetMode.FOOD_LINKS
-     */
+    // ⬇️ StopParsing 던져도 롤백하지 않도록 명시
+    @Transactional(noRollbackFor = StopParsing.class)
     public FoodSeedDto.ImportResultDto importFromFile(InputStream in, String filename) throws Exception {
-        // 0) 시작 전에 선택적으로 리셋
         resetTables(ResetMode.ALL);
 
-        List<String> warnings = new ArrayList<>();
-        int totalRows = 0, foodsUpserted = 0, nutrientsLinked = 0;
+        final List<String> warnings = new ArrayList<>();
+        final int[] totalRows = {0}, foodsUpserted = {0}, nutrientsLinked = {0};
 
-        DataFormatter fmt = new DataFormatter();
+        try (OPCPackage pkg = OPCPackage.open(in)) {
+            XSSFReader reader = new XSSFReader(pkg);
+            StylesTable styles = reader.getStylesTable();
+            SharedStrings sst = reader.getSharedStringsTable();
+            DataFormatter formatter = new DataFormatter();
 
+            // ✅ 모든 시트를 순회하면서, 시트마다 매번 새 parser 생성 (중요)
+            XSSFReader.SheetIterator it = (XSSFReader.SheetIterator) reader.getSheetsData();
+            int sheetIdx = 0;
+            while (it.hasNext()) {
+                try (InputStream sheet = it.next()) {
+                    sheetIdx++;
+                    log.info("[FoodSeed] Parsing sheet {} - {}", sheetIdx, it.getSheetName());
 
-        try (Workbook wb = WorkbookFactory.create(in)) {
-            Sheet sh = wb.getSheetAt(0);
-            if (sh.getPhysicalNumberOfRows() < 2) {
-                return FoodSeedDto.ImportResultDto.builder()
-                        .totalRows(0).foodsUpserted(0).nutrientsLinked(0)
-                        .warnings(List.of("엑셀에 데이터 행이 없습니다.")).build();
-            }
+                    XMLReader parser = SAXHelper.newXMLReader(); // ✅ 핵심: SAXHelper 사용
 
-            // === 1) 헤더 인덱스 맵 ===
-            // 첫번째 행(헤더)의 모든 셀을 순회하며, 헤더 이름(식품코드, 대표식품명 등)과 해당 셀의 인덱스 번호(열번호)를 col 맵에 저장
-            // 예) : col.put("식품코드", 0)
-            Row header = sh.getRow(0);
-            Map<String, Integer> col = new HashMap<>();
-            for (Cell c : header) {
-                String h = fmt.formatCellValue(c).trim();
-                col.put(h, c.getColumnIndex());
-                log.info("헤더 : {}, trim 제거한 헤더 : {}, 저장된 col :: {} {}", c, col, h, col.get(h));
-            }
+                    XSSFSheetXMLHandler.SheetContentsHandler sheetHandler =
+                            new SimpleSheetHandler(row -> {
+                                totalRows[0]++;
+                                if (totalRows[0] <= 3) log.info("[Row{}] {}", totalRows[0], row);
 
-            // 필수 컬럼 확인
-            Integer cFoodCode   = col.get("식품코드");         // external_id
-            Integer cRepName    = col.get("식품명");       // name
-            Integer cKcal       = col.get("에너지(kcal)");     // calories
-            Integer cCategory   = col.get("식품대분류명");    // category 추가
-            // 사용자가 원한 매핑: sourceName <- "영양성분함량기준량"
-            Integer cSourceName = col.get("영양성분함량기준량");
+                                // ---- 값 읽기 (헤더 키는 트림/은닉문자 제거로 정규화됨) ----
+                                String externalId = row.get("식품코드");
+                                if (externalId == null || externalId.isBlank()) {
+                                    warnings.add("행 " + totalRows[0] + ": 식품코드 누락 → 스킵");
+                                    return;
+                                }
+                                String name       = row.get("식품명");
+                                String category   = row.get("식품대분류명");
+                                BigDecimal calories = parseDecimal(row.get("에너지(kcal)"));
+                                String sourceName = row.get("영양성분함량기준량");
 
-            if (cFoodCode == null || cRepName == null || cKcal == null) {
-                throw new IllegalArgumentException("필수 컬럼(식품코드/대표식품명/에너지(kcal))을 찾을 수 없습니다.");
-            }
+                                // ---- Food upsert ----
+                                Food food = foodRepository.findByExternalId(externalId)
+                                        .orElseGet(() -> new Food(name, null, sourceName, externalId, calories, category));
+                                if (food.getId() == null) {
+                                    foodRepository.save(food);
+                                    foodsUpserted[0]++;
+                                } else if (food.merge(name, sourceName, calories, category)) {
+                                    foodsUpserted[0]++;
+                                }
 
-            // 영양소 헤더 → 시스템 Nutrient 이름 과 매핑 (NutrientType.CARBS과 같이 nutrients.name 칼럼에 들어갈 예정)
-            Map<String, String> nutrientHeaderToName = Map.ofEntries(
-                    Map.entry("탄수화물(g)",    "CARBS"),
-                    Map.entry("단백질(g)",      "PROTEINS"),
-                    Map.entry("지방(g)",        "FATS"),
-                    Map.entry("당류(g)",        "SUGARS"),
-                    Map.entry("포화지방산(g)",  "SATURATED_FAT"),
-                    Map.entry("트랜스지방산(g)","TRANS_FAT"),
-                    Map.entry("콜레스테롤(mg)","CHOLESTEROL"),
-                    Map.entry("나트륨(mg)",     "SODIUM"),
-                    Map.entry("엽산(μg DFE)",   "FOLIC_ACID"),
-                    Map.entry("철(mg)",         "IRON"),
-                    Map.entry("칼슘(mg)",       "CALCIUM"),
-                    Map.entry("수분(g)",        "MOISTURE")
-            );
+                                // ---- Nutrients ----
+                                Map<String, String> nutrientHeaderToName = Map.ofEntries(
+                                        Map.entry("탄수화물(g)", "CARBS"),
+                                        Map.entry("단백질(g)",   "PROTEINS"),
+                                        Map.entry("지방(g)",     "FATS"),
+                                        Map.entry("당류(g)",     "SUGARS"),
+                                        Map.entry("포화지방산(g)","SATURATED_FAT"),
+                                        Map.entry("트랜스지방산(g)","TRANS_FAT"),
+                                        Map.entry("콜레스테롤(mg)","CHOLESTEROL"),
+                                        Map.entry("나트륨(mg)",  "SODIUM"),
+                                        Map.entry("엽산(μg DFE)","FOLIC_ACID"),
+                                        Map.entry("철(mg)",      "IRON"),
+                                        Map.entry("칼슘(mg)",    "CALCIUM"),
+                                        Map.entry("수분(g)",     "MOISTURE")
+                                );
 
-            // 헤더 인덱스 + 단위 추출
-            record ColInfo(Integer idx, Unit unit) {}
-            Map<String, ColInfo> nutrientCols = new HashMap<>();
-            // nutrientCols 맵은 실제 엑셀 속 영양소 컬럼의 인덱스와 단위 정보(g, mg) 등을 저장
-            for (String excelHeader : nutrientHeaderToName.keySet()) {
-                Integer idx = col.get(excelHeader);
-                if (idx != null) {
-                    Unit unit = normalizeUnit(unitFromHeader(excelHeader));
-                    nutrientCols.put(excelHeader, new ColInfo(idx, unit));
-                }
-            }
+                                for (String header : nutrientHeaderToName.keySet()) {
+                                    String valStr = row.get(header);
+                                    if (valStr == null || valStr.isBlank()) continue;
 
-            // === 2) 행 루프 ===
-            final int BATCH = 500; int batchCount = 0;
+                                    BigDecimal val = parseDecimal(valStr);
+                                    String nutrientName = nutrientHeaderToName.get(header);
+                                    Unit unit = unitFromHeader(header);
 
-            for (int r = 1; r <= sh.getLastRowNum(); r++) {
-                // 테스트 -> 30개만 먼저 처리
-//                if (r > 30){
-//                    break;
-//                }
+                                    Nutrient nutrient = nutrientRepository.findByName(nutrientName)
+                                            .orElseGet(() -> nutrientRepository.save(new Nutrient(nutrientName, null, unit)));
 
-                // 루프로 두번째 행 ~ 마지막 행까지 한줄씩 순회하며 데이터 읽기
-                Row row = sh.getRow(r);
-                if (row == null) continue;
-                totalRows++;
+                                    foodNutrientRepository.findByFoodIdAndNutrientId(food.getId(), nutrient.getId())
+                                            .map(fn -> {
+                                                if (fn.updateValueIfChanged(val)) nutrientsLinked[0]++;
+                                                return fn;
+                                            })
+                                            .orElseGet(() -> {
+                                                foodNutrientRepository.save(new FoodNutrient(food, nutrient, val));
+                                                nutrientsLinked[0]++;
+                                                return null;
+                                            });
+                                }
 
-                String externalId = getString(row, cFoodCode, fmt);
-                if (isBlank(externalId)) {
-                    warnings.add("행 " + (r+1) + ": 식품코드 누락 → 스킵");
-                    continue;
-                }
-                String name = getString(row, cRepName, fmt);
-                String category = getString(row, cCategory, fmt);
-                BigDecimal calories = getDecimal(row, cKcal, fmt);
-                String sourceName = (cSourceName == null) ? null : getString(row, cSourceName, fmt);
+                                if (totalRows[0] % 500 == 0) { em.flush(); em.clear(); }
 
-                // 2-1) Food upsert
-                Food food = foodRepository.findByExternalId(externalId)
-                        .orElseGet(() -> new Food(name, null, sourceName, externalId, calories, category));
+                                // ✅ 여기 추가: 10행 이상이면 중단
+//                                if (totalRows[0] >= 10) {
+//                                    log.info("⚠️ 테스트 모드: 10행까지만 처리 후 중단");
+//                                    throw new StopParsing(); // 밑에 RuntimeException 하나 선언
+//                                }
+                            });
 
-                boolean changed;
-                if (food.getId() == null) {
-                    foodRepository.save(food);
-                    foodsUpserted++;
-                    changed = true;
-                } else {
-                    changed = food.merge(name, sourceName, calories, category);
-                    if (changed) {
-                        foodsUpserted++;
-                        // JPA dirty checking
+                    parser.setContentHandler(new XSSFSheetXMLHandler(
+                            styles, (CommentsTable) null, sst, sheetHandler, formatter, false
+                    ));
+
+                    try {
+                        parser.parse(new InputSource(sheet));
+                    } catch (StopParsing e) {
+                        // ✅ 여기서 잡아주면 트랜잭션이 롤백되지 않는다
+                        log.info("Parsing stopped early after {} rows (테스트 모드).", totalRows[0]);
+                        break; // 다른 시트도 읽지 말고 종료
                     }
                 }
-
-                // 2-2) Nutrient & FoodNutrient upsert
-                for (Map.Entry<String, ColInfo> e : nutrientCols.entrySet()) {
-                    String headerName = e.getKey();
-                    ColInfo ci = e.getValue();
-
-                    BigDecimal val = getDecimal(row, ci.idx(), fmt);
-                    if (val == null) continue;
-
-                    String nutrientName = nutrientHeaderToName.get(headerName);
-
-                    Nutrient nutrient = nutrientRepository.findByName(nutrientName)
-                            .orElseGet(() -> nutrientRepository.save(
-                                    new Nutrient(nutrientName, null, ci.unit())
-                            ));
-
-                    Optional<FoodNutrient> existing =
-                            foodNutrientRepository.findByFoodIdAndNutrientId(food.getId(), nutrient.getId());
-
-                    if (existing.isPresent()) {
-                        if (existing.get().updateValueIfChanged(val)) {
-                            nutrientsLinked++;
-                        }
-                    } else {
-                        foodNutrientRepository.save(new FoodNutrient(food, nutrient, val));
-                        nutrientsLinked++;
-                    }
-                }
-
-                if (++batchCount >= BATCH) {
-                    // 메모리/성능 위해 주기적 flush/clear
-                    flushAndClear();
-                    batchCount = 0;
-                }
             }
-
-            if (batchCount > 0) flushAndClear();
         }
 
+        // 마지막 잔여 영속성 컨텍스트 비우기
+        em.flush(); em.clear();
+
+        log.info("[FoodSeed] Done. rows={}, foodsUpserted={}, nutrientsLinked={}, warnings={}",
+                totalRows[0], foodsUpserted[0], nutrientsLinked[0], warnings.size());
+
         return FoodSeedDto.ImportResultDto.builder()
-                .totalRows(totalRows)
-                .foodsUpserted(foodsUpserted)
-                .nutrientsLinked(nutrientsLinked)
+                .totalRows(totalRows[0])
+                .foodsUpserted(foodsUpserted[0])
+                .nutrientsLinked(nutrientsLinked[0])
                 .warnings(warnings)
                 .build();
     }
 
-    // ===== util =====
-    @PersistenceContext
-    private EntityManager em;
-    private void flushAndClear() { em.flush(); em.clear(); }
-
-    private String getString(Row row, Integer idx, DataFormatter fmt) {
-        if (idx == null) return null;
-        Cell c = row.getCell(idx);
-        return c == null ? null : fmt.formatCellValue(c).trim();
-    }
-    private BigDecimal getDecimal(Row row, Integer idx, DataFormatter fmt) {
-        String s = getString(row, idx, fmt);
-        if (isBlank(s)) return null;
-        try {
-            s = s.replace(",", "");              // 1,234.56 → 1234.56
-            if (s.endsWith("%")) s = s.substring(0, s.length()-1);
-            return new BigDecimal(s);
-        } catch (Exception ex) {
-            return null;
-        }
-    }
-    private boolean isBlank(String s){ return s==null || s.isBlank(); }
-
-    // "단백질(g)" → "g", "엽산(μg DFE)" → "μg DFE"
-    private String unitFromHeader(String header) {
-        int l = header.indexOf('('), r = header.indexOf(')');
-        if (l > -1 && r > l) return header.substring(l + 1, r).trim();
-        return "g";
+    private void resetTables(ResetMode mode) {
+        if (mode == ResetMode.NONE) return;
+        em.createNativeQuery("SET FOREIGN_KEY_CHECKS=0").executeUpdate();
+        em.createNativeQuery("TRUNCATE TABLE food_nutrients").executeUpdate();
+        if (mode == ResetMode.ALL) em.createNativeQuery("TRUNCATE TABLE nutrients").executeUpdate();
+        em.createNativeQuery("SET FOREIGN_KEY_CHECKS=1").executeUpdate();
     }
 
-    // µg/μg/ug, 공백/접미어 포함 케이스를 전부 허용
-    private Unit normalizeUnit(String u) {
-        if (u == null) return Unit.g;
-        // µ → μ 통일, 소문자
-        String x = u.replace("µ", "μ").toLowerCase();
+    private BigDecimal parseDecimal(String s) {
+        try { return (s == null || s.isBlank()) ? null :
+                new BigDecimal(s.replace(",", "").replace("%", "").trim()); }
+        catch (Exception e) { return null; }
+    }
 
-        // 공백/문자 혼용해도 포함 여부로 판단
+    private Unit unitFromHeader(String header) {
+        String x = header.replace("µ","μ").toLowerCase();
         if (x.contains("μg") || x.contains("ug")) return Unit.μg;
         if (x.contains("mg")) return Unit.mg;
-        if (x.contains("g"))  return Unit.g;
-
-        // 모르면 g로 폴백
         return Unit.g;
     }
 
+    /** ===== Sheet 핸들러: 1행(첫 비어있지 않은 행)을 헤더로 사용, 헤더/값 모두 정규화 ===== */
+    private static class SimpleSheetHandler implements XSSFSheetXMLHandler.SheetContentsHandler {
+        private final RowCallback callback;
+        private final List<String> headers = new ArrayList<>();
+        private final List<String> cells   = new ArrayList<>();
+
+        SimpleSheetHandler(RowCallback callback) { this.callback = callback; }
+
+        @Override public void startRow(int rowNum) { cells.clear(); }
+
+        @Override public void endRow(int rowNum) {
+            // 행 로그
+            log.debug("endRow rowNum={}, cells={}", rowNum, cells);
+
+            // 첫 번째 비어있지 않은 행을 헤더로 간주
+            if (headers.isEmpty()) {
+                if (isAllBlank(cells)) return; // 완전 빈 줄은 스킵
+                headers.clear();
+                for (String h : cells) headers.add(sanitize(h));
+                log.info("Header detected: {}", headers);
+                return;
+            }
+
+            if (isAllBlank(cells)) return;
+
+            Map<String,String> row = new LinkedHashMap<>();
+            for (int i = 0; i < Math.min(headers.size(), cells.size()); i++) {
+                row.put(headers.get(i), sanitize(cells.get(i)));
+            }
+            log.debug("Row mapped: {}", row);
+            if (!row.isEmpty()) callback.handle(row);
+        }
+
+        @Override public void cell(String cellRef, String value, XSSFComment comment) {
+            int col = CellReference.convertColStringToIndex(cellRef.replaceAll("\\d",""));
+            while (cells.size() <= col) cells.add("");
+            cells.set(col, value == null ? "" : value);
+        }
+
+        private static boolean isAllBlank(List<String> list) {
+            for (String s : list) if (s != null && !s.trim().isEmpty()) return false;
+            return true;
+        }
+
+        private static String sanitize(String s) {
+            if (s == null) return "";
+            // 트림 + 제로-위드스페이스 제거
+            return s.replace("\u200B","").replace("\uFEFF","").trim();
+        }
+    }
+
+    @FunctionalInterface
+    interface RowCallback { void handle(Map<String, String> row); }
 }
+
+// ✅ StopParsing 예외 클래스 선언
+class StopParsing extends RuntimeException {}
