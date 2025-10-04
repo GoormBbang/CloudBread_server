@@ -3,6 +3,8 @@ package com.cloudbread.domain.user.application;
 import com.cloudbread.auth.token.domain.Token;
 import com.cloudbread.auth.token.domain.TokenRepository;
 import com.cloudbread.auth.token.exception.RefreshTokenNotFoundException;
+import com.cloudbread.domain.crawling.domain.entity.TipContent;
+import com.cloudbread.domain.crawling.domain.repository.TipContentRepository;
 import com.cloudbread.domain.user.converter.UserConverter;
 import com.cloudbread.domain.user.domain.entity.*;
 import com.cloudbread.domain.user.domain.enums.DietTypeEnum;
@@ -15,10 +17,14 @@ import com.cloudbread.domain.user.exception.UserNotFoundException;
 import com.cloudbread.global.common.code.status.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -240,10 +246,6 @@ public class UserServiceImpl implements UserService {
 
         return UserConverter.toUpdateUserSummaryResponse(user);
     }
-
-
-
-
 
     @Override
     public void logout(Long userId) {
