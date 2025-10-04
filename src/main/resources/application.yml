@@ -14,11 +14,12 @@ springdoc:
   default-consumes-media-type: application/json;charset=UTF-8
   default-produces-media-type: application/json;charset=UTF-8
   swagger-ui:
-    path: /
+    path: /api/swagger-ui          # 최종 접속: /api/swagger-ui/index.html
     disable-swagger-default-url: true
     display-request-duration: true
     operations-sorter: alpha
-
+  api-docs:
+    path: /api/v3/api-docs
 
 management:
   endpoints:

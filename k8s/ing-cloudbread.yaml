@@ -5,7 +5,8 @@ metadata:
   namespace: backend
   annotations:
     # / 로 들어온 요청을 서비스로 그대로 넘김(서브경로 쓰면 rewrite 사용)
-    nginx.ingress.kubernetes.io/rewrite-target: /
+  #  nginx.ingress.kubernetes.io/use-regex: "true"          # ★ 필수
+   # nginx.ingress.kubernetes.io/rewrite-target: /$2        # ★ /api 잘라내고 뒷부분만 전달
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"   # 허용 크기 50MB
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"     # 업스트림(스프링)에서 응답 바이트를 읽는 사이사이 대기시간 한도
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"     # NGINX→업스트림으로 요청/바디 전송하는 사이사이 대기시간 한도
@@ -16,7 +17,8 @@ spec:
     - host: cloudbread.133.186.213.185.nip.io   # ← 1)에서 정한 호스트
       http:
         paths:
-          - path: /               # 스프링이 루트(/)에서 동작하니 그대로
+          # 외부 /api/**  → 내부도 /api/** 그대로 전달
+          - path: /api
             pathType: Prefix
             backend:
               service:

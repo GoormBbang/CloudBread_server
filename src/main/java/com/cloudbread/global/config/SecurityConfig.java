@@ -38,6 +38,8 @@ public class SecurityConfig {
                 //  - userInfoEndPoint에서 사용자 정보 불러오고
                 //  - successHandler에서 로그인 성공 시 JWT 생성 및 반환로직
                 .oauth2Login(oauth2 -> oauth2
+                        .authorizationEndpoint(a -> a.baseUri("/api/oauth2/authorization"))
+                        .redirectionEndpoint(r -> r.baseUri("/api/login/oauth2/code/*"))
                         .userInfoEndpoint(userInfoEndpoint ->
                                 userInfoEndpoint.userService(customOAuth2UserService))
                         .successHandler(oAuth2LoginSuccessHandler)
@@ -49,7 +51,10 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/api/swagger-ui/**", "/api/v3/api-docs/**",
                                 "/swagger-ui/**", "/v3/api-docs/**",
+                                "/api/oauth2/authorization/**",
+                                "/api/login/oauth2/code/**",
                                 "/api/users/example/{user-id}", // 패키지 구조 예제 코드
                                 "/oauth2/authorization/**", // 카카오 로그인 요청 (/kakao, /google
                                 "/login/oauth2/code/**", // 카카오 인증 콜백
