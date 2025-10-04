@@ -94,8 +94,9 @@ public class FoodDataSeedService {
 
             // 필수 컬럼 확인
             Integer cFoodCode   = col.get("식품코드");         // external_id
-            Integer cRepName    = col.get("대표식품명");       // name
+            Integer cRepName    = col.get("식품명");       // name
             Integer cKcal       = col.get("에너지(kcal)");     // calories
+            Integer cCategory   = col.get("식품대분류명");    // category 추가
             // 사용자가 원한 매핑: sourceName <- "영양성분함량기준량"
             Integer cSourceName = col.get("영양성분함량기준량");
 
@@ -136,9 +137,9 @@ public class FoodDataSeedService {
 
             for (int r = 1; r <= sh.getLastRowNum(); r++) {
                 // 테스트 -> 30개만 먼저 처리
-//                if (r > 30){
-//                    break;
-//                }
+                if (r > 30){
+                    break;
+                }
 
                 // 루프로 두번째 행 ~ 마지막 행까지 한줄씩 순회하며 데이터 읽기
                 Row row = sh.getRow(r);
@@ -151,12 +152,13 @@ public class FoodDataSeedService {
                     continue;
                 }
                 String name = getString(row, cRepName, fmt);
+                String category = getString(row, cCategory, fmt);
                 BigDecimal calories = getDecimal(row, cKcal, fmt);
                 String sourceName = (cSourceName == null) ? null : getString(row, cSourceName, fmt);
 
                 // 2-1) Food upsert
                 Food food = foodRepository.findByExternalId(externalId)
-                        .orElseGet(() -> new Food(name, null, sourceName, externalId, calories));
+                        .orElseGet(() -> new Food(name, null, sourceName, externalId, calories, category));
 
                 boolean changed;
                 if (food.getId() == null) {
@@ -164,7 +166,7 @@ public class FoodDataSeedService {
                     foodsUpserted++;
                     changed = true;
                 } else {
-                    changed = food.merge(name, sourceName, calories);
+                    changed = food.merge(name, sourceName, calories, category);
                     if (changed) {
                         foodsUpserted++;
                         // JPA dirty checking
