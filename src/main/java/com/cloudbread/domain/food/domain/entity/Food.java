@@ -33,22 +33,26 @@ public class Food extends BaseEntity {
 
     private BigDecimal calories; // 1회 섭취량 칼로리
 
+    private String category; // 음식 카테고리 ex) 가정식(분석 함량)
+
     @Builder
-    public Food(String name, String imageUrl, String sourceName, String externalId, BigDecimal calories) {
+    public Food(String name, String imageUrl, String sourceName, String externalId, BigDecimal calories, String category) {
         this.name = name;
         this.imageUrl = imageUrl;
         this.sourceName = sourceName;
         this.externalId = externalId;
         this.calories = calories;
+        this.category = category;
     }
 
-    public boolean merge(String name, String sourceName, BigDecimal calories) {
+    public boolean merge(String name, String sourceName, BigDecimal calories, String category) {
         boolean changed = false;
         if (name != null && !name.equals(this.name)) { this.name = name; changed = true; }
         if (sourceName != null && !sourceName.equals(this.sourceName)) { this.sourceName = sourceName; changed = true; }
         if (calories != null && (this.calories == null || this.calories.compareTo(calories)!=0)) {
             this.calories = calories; changed = true;
         }
+        if (category != null && !category.equals(this.category)) { this.category = category; changed = true; }
         return changed;
     }
 }
