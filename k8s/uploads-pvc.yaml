@@ -1,0 +1,12 @@
+# k8s/uploads-pvc.yaml
+# '업로드 폴더'를 위한 PVC, local-path가 기본 SC라서 자동으로 PV가 생기고, 노드의 로컬 디스크에 디렉토리 할당
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: uploads-pvc
+  namespace: backend
+spec:
+  accessModes: [ ReadWriteOnce ]   # 단일 파드 마운트 (Replica=1 유지)
+  resources:
+    requests:
+      storage: 20Gi

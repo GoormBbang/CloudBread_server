@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 @Component
-public class LocalStorageClient implements StorageClient {
+public class StorageClientImpl implements StorageClient {
     @Value("${storage.local.base-dir:./uploads}")
     private String baseDir; // 현재 디렉터리 아래에 uploads 폴더
 
