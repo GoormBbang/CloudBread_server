@@ -29,7 +29,10 @@ public enum SuccessStatus implements BaseCode {
     USER_DELETE_SUCCESS(HttpStatus.OK, "USER_200", "회원탈퇴가 완료되었습니다."),
 
     // token
-    TOKEN_REISSUE_SUCCESS(HttpStatus.OK, "TOKEN_300", "토큰이 정상적으로 재발급되었습니다.");
+    TOKEN_REISSUE_SUCCESS(HttpStatus.OK, "TOKEN_300", "토큰이 정상적으로 재발급되었습니다."),
+
+    // photo-analysis
+    PHOTO_UPLOAD_SUCCESS(HttpStatus.OK, "PHOTO_400", "사진이 정상적으로 업로드되었습니다.");
 
 
     private final HttpStatus httpStatus;

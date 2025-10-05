@@ -3,6 +3,16 @@ spring:
   config:
     import: application-secret.yml
 
+# 파일 저장 경로
+storage:
+  local:
+    base-dir: ./uploads
+    public-base-url: "http://localhost:8080/uploads"
+
+ai:
+  food:
+    enabled: false            # 로컬에선 AI 호출 건너뜀
+    base-url: "http://localhost:8000"  # (의미 없음, enabled=false라 호출 안 함)
 
 # application-local.yml
 swagger:

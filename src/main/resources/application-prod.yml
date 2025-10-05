@@ -2,6 +2,12 @@
 jwt:
   secret: ${JWT_SECRET}
 
+# ai 음식 추출 해준다면..
+ai:
+  food:
+    enabled: true
+    base-url: "http://food-recommend-server-svc.ai-services.svc.cluster.local"
+
 # spring
 spring:
   datasource:
