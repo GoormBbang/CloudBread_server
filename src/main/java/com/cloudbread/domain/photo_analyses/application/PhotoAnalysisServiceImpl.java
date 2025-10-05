@@ -1,13 +1,17 @@
 package com.cloudbread.domain.photo_analyses.application;
 
+import com.cloudbread.domain.photo_analyses.application.es.CandidateFinder;
+import com.cloudbread.domain.photo_analyses.application.event.PhotoAnalysisSseManager;
 import com.cloudbread.domain.photo_analyses.application.image.StorageClient;
 import com.cloudbread.domain.photo_analyses.domain.entity.PhotoAnalysis;
 import com.cloudbread.domain.photo_analyses.domain.enums.PhotoAnalysisStatus;
 import com.cloudbread.domain.photo_analyses.domain.repository.PhotoAnalysisRepository;
+import com.cloudbread.domain.photo_analyses.dto.PhotoAnalysisRequest;
 import com.cloudbread.domain.photo_analyses.dto.PhotoAnalysisResponse;
 import com.cloudbread.domain.user.domain.entity.User;
 import com.cloudbread.domain.user.domain.repository.UserRepository;
 import com.cloudbread.domain.user.exception.UserNotFoundException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +23,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -30,6 +35,10 @@ public class PhotoAnalysisServiceImpl implements PhotoAnalysisService {
     private final UserRepository userRepository;
     private final StorageClient storageClient;
     private final WebClient aiFoodClient;
+
+    private final PhotoAnalysisSseManager sse;
+    private final CandidateFinder candidateFinder;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${ai.food.enabled:false}")
     private boolean aiEnabled; // ai 호출 여부
@@ -79,6 +88,39 @@ public class PhotoAnalysisServiceImpl implements PhotoAnalysisService {
         });
 
         return new PhotoAnalysisResponse.UploadResponse(pa.getId(), imageUrl, pa.getPhotoAnalysisStatus());
+
+    }
+
+    /*
+        AI 라벨 수신 -> ES 후보 3개 생성 -> DB 저장 -> SSE 푸시
+     */
+    @Override
+    public void handleAiLabel(Long photoAnalysisId, PhotoAnalysisRequest.AiLabelRequest request) throws Exception {
+        var pa = photoAnalysisRepository.findById(photoAnalysisId)
+                .orElseThrow(() -> new IllegalArgumentException("photoAnalysis not found: " + photoAnalysisId));
+
+        // 1) 상태 : labeled
+        pa.updateLabeled(request.getLabel(), request.getConfidence());
+        pa.updatePhotoAnalysisStatus(PhotoAnalysisStatus.LABELED);
+        sse.sendStatus(photoAnalysisId, PhotoAnalysisStatus.LABELED); // 구독한 프론트에게 LABELDED를 보내주세요!
+
+        // 2) 후보 생성 (ES -> 후에 교체 할 예정, 지금은 JPA Fallback)
+        var items = candidateFinder.find(request.getLabel(), 3);
+
+        // 3) payload 구성 & JSON 저장
+        var payload = PhotoAnalysisResponse.CandidatesPayload.builder()
+                .photoAnalysisId(photoAnalysisId)
+                .query(request.getLabel())
+                .status(PhotoAnalysisStatus.CANDIDATES_READY.name())
+                .candidates(items)
+                .build();
+
+        pa.updateCandidatesJson(objectMapper.writeValueAsString(payload));
+
+        // 4) SSE 푸시
+        sse.sendStatus(photoAnalysisId, PhotoAnalysisStatus.CANDIDATES_READY);
+        sse.sendCandidates(photoAnalysisId, payload);
+
 
     }
 

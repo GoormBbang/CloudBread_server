@@ -3,8 +3,10 @@ package com.cloudbread.domain.food.domain.repository;
 import com.cloudbread.domain.food.domain.entity.FoodNutrient;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface FoodNutrientRepository extends JpaRepository<FoodNutrient, Long> {
     Optional<FoodNutrient> findByFoodIdAndNutrientId(Long foodId, Long nutrientId);
+    List<FoodNutrient> findByFoodId(Long foodId);
 }
