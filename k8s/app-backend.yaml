@@ -19,6 +19,9 @@ spec:
             - containerPort: 8080
           envFrom: # 앞서 생성해서 넣은 app-env 환경변수 갖고와서 넣기
             - secretRef: { name: app-env }
+          volumeMounts: # BE 파드 안에서 /data/uploads가 실제 노드 디스크와 연결된다
+            - name: uploads # 외부 접근 URL 경로 (FE, AI..)
+              mountPath: /data/uploads # BE 파드 내부 경로
           readinessProbe:
             httpGet: { path: /actuator/health/readiness, port: 8080 }
             initialDelaySeconds: 10
@@ -27,6 +30,10 @@ spec:
             httpGet: { path: /actuator/health/liveness, port: 8080 }
             initialDelaySeconds: 30
             periodSeconds: 20
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: uploads-pvc
 ---
 # 서비스 - 파드를 외부에 노출시키고 접근가능하게끔 하는 역할
 # loadbalancer 말고 clusterIP로 수정

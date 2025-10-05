@@ -57,6 +57,9 @@ dependencies {
     implementation 'org.apache.poi:poi-ooxml:5.2.5'
     implementation 'org.apache.poi:poi-ooxml-lite:5.2.5'
 
+    // webClient
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
     //crawling
     implementation 'org.seleniumhq.selenium:selenium-java:4.25.0'
     implementation 'org.jsoup:jsoup:1.17.2'
