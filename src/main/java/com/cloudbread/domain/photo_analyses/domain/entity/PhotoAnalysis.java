@@ -72,6 +72,20 @@ public class PhotoAnalysis extends BaseEntity {
     public void setImageUrl(String imageUrl){
         this.imageUrl = imageUrl;
     }
+
+    public void updateLabeled(String aiLabel, Double aiConfidence){
+        this.aiLabel = aiLabel;
+        this.aiConfidence = aiConfidence;
+    }
+
+    public void updatePhotoAnalysisStatus(PhotoAnalysisStatus status){
+        this.photoAnalysisStatus = status;
+    }
+
+    public void updateCandidatesJson(String json) {
+        this.candidatesJson = json;
+        this.photoAnalysisStatus = PhotoAnalysisStatus.CANDIDATES_READY;
+    }
 }
 
 
