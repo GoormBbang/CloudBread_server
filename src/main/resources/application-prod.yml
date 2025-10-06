@@ -6,7 +6,8 @@ jwt:
 ai:
   food:
     enabled: true
-    base-url: "http://food-recommend-server-svc.ai-services.svc.cluster.local"
+    base-url: "http://photo-label-server-svc.ai-services.svc.cluster.local"
+   # base-url: "http://food-recommend-server-svc.ai-services.svc.cluster.local"
 
 # storage
 storage:
