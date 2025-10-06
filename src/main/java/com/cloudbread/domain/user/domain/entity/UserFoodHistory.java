@@ -1,11 +1,13 @@
 package com.cloudbread.domain.user.domain.entity;
 
 import com.cloudbread.domain.food.domain.entity.Food;
+import com.cloudbread.domain.photo_analyses.domain.entity.PhotoAnalysis;
 import com.cloudbread.domain.user.domain.enums.MealType;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Getter
@@ -31,10 +33,27 @@ public class UserFoodHistory {
 
     private int intakePercent; // 0~100 %
 
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt; // 먹은 시간
 
     // FK → food.id
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "photo_analysis_id")
+    @JoinColumn(name = "food_id")
     private Food food;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "photo_analysis_id")
+    private PhotoAnalysis photoAnalysis; // 선택
+
+    public static UserFoodHistory of(User user, Food food, PhotoAnalysis pa,
+                                 MealType mealType, int intakePercent, LocalDateTime createdAt) {
+        UserFoodHistory fh = new UserFoodHistory();
+        fh.user = user;
+        fh.food = food;
+        fh.photoAnalysis = pa;
+        fh.mealType = mealType;
+        fh.intakePercent = intakePercent;
+        fh.createdAt = createdAt;
+        return fh;
+    }
 }
+
