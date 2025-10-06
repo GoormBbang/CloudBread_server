@@ -18,7 +18,7 @@ public class MealPlanResponseDto {
     private Long planId;
 
     @JsonProperty("planDate")
-    private LocalDate planDate;
+    private String planDate;
     @JsonProperty("sections")
     private List<SectionDto> sections;
 
@@ -53,4 +53,5 @@ public class MealPlanResponseDto {
         @JsonProperty("foodCategory")
         private String foodCategory; // 음식 카테고리
     }
+
 }

@@ -69,24 +69,33 @@ public class UserRequestDto {
     @AllArgsConstructor
     @Builder
     public static class AiUserRequest {
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-        private LocalDate birthDate;              // 생년월일
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-        private LocalDate dueDate;                // 출산 예정일
+        //@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private String birthDate;              // 생년월일
+        //@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private String dueDate;                // 출산 예정일
         private String otherHealthFactors;        // 기타 건강 특성
         private List<FoodHistoryDto> foodHistory; // 최근 음식 기록
 
         public static AiUserRequest from(User user, List<FoodHistoryDto> foodHistory) {
             return AiUserRequest.builder()
-                    .birthDate(user.getBirthDate())
-                    .dueDate(user.getDueDate())
+                    .birthDate(
+                            user.getBirthDate() != null
+                                    ? user.getBirthDate().toString()
+                                    : ""  // null 방지
+                    )
+                    .dueDate(
+                            user.getDueDate() != null
+                                    ? user.getDueDate().toString()
+                                    : ""  // null 방지
+                    )
                     .otherHealthFactors(user.getOtherHealthFactors())
                     .foodHistory(foodHistory)
                     .build();
         }
     }
 
-    // ✅ 음식 히스토리 DTO
+
+        // ✅ 음식 히스토리 DTO
     @Getter
     @AllArgsConstructor
     @NoArgsConstructor
