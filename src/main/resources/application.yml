@@ -1,3 +1,8 @@
+# ✅ FastAPI 추천 식단 서버 엔드포인트
+external:
+  fastapi:
+    mealplan-url: http://cloudbread.133.186.213.185.nip.io/api/food/api/v1/recommend
+
 # application.yml - 공통, 기본 프로파일
 spring:
   profiles:
