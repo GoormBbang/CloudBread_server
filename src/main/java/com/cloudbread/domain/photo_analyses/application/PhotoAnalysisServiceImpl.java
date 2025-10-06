@@ -107,18 +107,20 @@ public class PhotoAnalysisServiceImpl implements PhotoAnalysisService {
         // 2) 후보 생성 (ES -> 후에 교체 할 예정, 지금은 JPA Fallback)
         var items = candidateFinder.find(request.getLabel(), 3);
 
+        var nextStatus = items.isEmpty() ? PhotoAnalysisStatus.NO_CANDIDATES
+                : PhotoAnalysisStatus.CANDIDATES_READY;
+
         // 3) payload 구성 & JSON 저장
         var payload = PhotoAnalysisResponse.CandidatesPayload.builder()
                 .photoAnalysisId(photoAnalysisId)
                 .query(request.getLabel())
-                .status(PhotoAnalysisStatus.CANDIDATES_READY.name())
-                .candidates(items)
+                .status(nextStatus.name())
+                .candidates(items) // 빈 리스트여도 그대로 넣음
                 .build();
 
-        pa.updateCandidatesJson(objectMapper.writeValueAsString(payload));
-
-        // 4) SSE 푸시
-        sse.sendStatus(photoAnalysisId, PhotoAnalysisStatus.CANDIDATES_READY);
+        // 4) DB 반영 + SSE 발행
+        pa.updateCandidates(objectMapper.writeValueAsString(payload), nextStatus);
+        sse.sendStatus(photoAnalysisId, nextStatus);
         sse.sendCandidates(photoAnalysisId, payload);
 
 

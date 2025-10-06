@@ -65,7 +65,8 @@ public class SecurityConfig {
                                 "/seed/**",
                                 "/api/ai/**", // ai가 백엔드로 요청보낼 때, 토큰 요청하지 않도록,
                                 "/uploads/**",
-                                "/api/photo-analyses/*/events" // 프론트가 이벤트 구독하는 api
+                                "/api/photo-analyses/*/events", // 프론트가 이벤트 구독하는 api,
+                                "/api/foods/suggest" // 음식 검색 api
                         )
                         .permitAll()
                         .anyRequest().authenticated() // 그외 요청은 허가된 사람만 인가
