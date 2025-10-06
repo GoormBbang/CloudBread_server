@@ -3,37 +3,38 @@ package com.cloudbread.domain.mealplan.domain.entity;
 import com.cloudbread.domain.user.domain.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "meal_plans")
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class MealPlan {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
 
     private LocalDate planDate;
 
     private String reasonDesc;
 
-    @CreationTimestamp
-    private LocalDateTime createdAt;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
-    @Builder.Default
+    // ✅ Cascade + orphanRemoval + Builder.Default 필수
     @OneToMany(mappedBy = "mealPlan", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MealPlanItem> items = new ArrayList<>();
+    @Builder.Default
+    private List<MealPlanItem> mealPlanItems = new ArrayList<>();
 
+    // ✅ 양방향 편의 메서드
+    public void addMealPlanItem(MealPlanItem item) {
+        mealPlanItems.add(item);
+        item.setMealPlan(this);
+    }
 }

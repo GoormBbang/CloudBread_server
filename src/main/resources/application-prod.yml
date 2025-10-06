@@ -7,13 +7,15 @@ ai:
   food:
     enabled: true
     base-url: "http://photo-label-server-svc.ai-services.svc.cluster.local"
-   # base-url: "http://food-recommend-server-svc.ai-services.svc.cluster.local"
+
 
 # storage
 storage:
   local:
     base-dir: /data/uploads # BE 파드 내부에, PVC로 마운트된 /data/uploads
     public-base-url: "http://cloudbread.133.186.213.185.nip.io/uploads" # 저장후 FE,AI로 돌려줄 접근가능한 URL 접두사, ingress에서 설정 열어둠
+
+
 
 # spring
 spring:
@@ -77,3 +79,8 @@ spring:
 # swagger 설정
 swagger:
   server-url: http://cloudbread.133.186.213.185.nip.io
+
+# FastAPI 서버 URL
+external:
+  fastapi:
+    url: http://cloudbread.133.186.213.185.nip.io

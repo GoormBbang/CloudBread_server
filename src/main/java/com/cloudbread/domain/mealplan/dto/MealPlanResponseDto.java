@@ -1,11 +1,13 @@
 package com.cloudbread.domain.mealplan.dto;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Getter
@@ -13,12 +15,12 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MealPlanResponseDto {
-
     @JsonProperty("planId")
     private Long planId;
 
     @JsonProperty("planDate")
     private String planDate;
+
     @JsonProperty("sections")
     private List<SectionDto> sections;
 
@@ -26,12 +28,13 @@ public class MealPlanResponseDto {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class SectionDto {
-
+    public static class SectionDto {  // ✅ static 필수
         @JsonProperty("mealType")
         private String mealType;
+
         @JsonProperty("totalKcal")
         private int totalKcal;
+
         @JsonProperty("items")
         private List<FoodItemDto> items;
     }
@@ -40,18 +43,20 @@ public class MealPlanResponseDto {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class FoodItemDto {
-
+    public static class FoodItemDto { // ✅ static 필수
         @JsonProperty("foodId")
         private Long foodId;
+
         @JsonProperty("name")
         private String name;
+
         @JsonProperty("portionLabel")
         private String portionLabel;
+
         @JsonProperty("estCalories")
         private int estCalories;
-        @JsonProperty("foodCategory")
-        private String foodCategory; // 음식 카테고리
-    }
 
+        @JsonProperty("foodCategory")
+        private String foodCategory;
+    }
 }
