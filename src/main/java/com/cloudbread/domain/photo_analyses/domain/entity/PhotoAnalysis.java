@@ -82,9 +82,14 @@ public class PhotoAnalysis extends BaseEntity {
         this.photoAnalysisStatus = status;
     }
 
-    public void updateCandidatesJson(String json) {
+//    public void updateCandidatesJson(String json) {
+//        this.candidatesJson = json;
+//        this.photoAnalysisStatus = PhotoAnalysisStatus.CANDIDATES_READY;
+//    }
+
+    public void updateCandidates(String json, PhotoAnalysisStatus status) {
         this.candidatesJson = json;
-        this.photoAnalysisStatus = PhotoAnalysisStatus.CANDIDATES_READY;
+        this.photoAnalysisStatus = status; // CANDIDATES_READY or NO_CANDIDATES
     }
 }
 

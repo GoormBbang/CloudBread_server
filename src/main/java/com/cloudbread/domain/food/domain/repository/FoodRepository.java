@@ -18,4 +18,15 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
     default List<Food> searchByNameContains(String q, int size) {
         return searchByNameContains(q, org.springframework.data.domain.PageRequest.of(0, size));
     }
+
+    @Query("""
+        select f from Food f
+        where lower(f.name) like lower(concat('%', :q, '%'))
+        order by 
+          case when lower(f.name) = lower(:q) then 0
+               when lower(f.name) like lower(concat(:q, '%')) then 1
+               else 2 end,
+          f.name asc
+    """)
+    List<Food> searchByNameContainsSuggest(@Param("q") String q, Pageable pageable);
 }
