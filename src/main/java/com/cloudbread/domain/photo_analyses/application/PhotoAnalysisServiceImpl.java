@@ -1,5 +1,10 @@
 package com.cloudbread.domain.photo_analyses.application;
 
+import com.cloudbread.domain.food.domain.entity.Food;
+import com.cloudbread.domain.food.domain.entity.FoodNutrient;
+import com.cloudbread.domain.food.domain.enums.Unit;
+import com.cloudbread.domain.food.domain.repository.FoodNutrientRepository;
+import com.cloudbread.domain.food.domain.repository.FoodRepository;
 import com.cloudbread.domain.photo_analyses.application.es.CandidateFinder;
 import com.cloudbread.domain.photo_analyses.application.event.PhotoAnalysisSseManager;
 import com.cloudbread.domain.photo_analyses.application.image.StorageClient;
@@ -23,6 +28,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +40,8 @@ import java.util.Map;
 public class PhotoAnalysisServiceImpl implements PhotoAnalysisService {
     private final PhotoAnalysisRepository photoAnalysisRepository;
     private final UserRepository userRepository;
+    private final FoodRepository foodRepository;
+    private final FoodNutrientRepository foodNutrientRepository;
     private final StorageClient storageClient;
     private final WebClient aiFoodClient;
 
@@ -126,6 +135,37 @@ public class PhotoAnalysisServiceImpl implements PhotoAnalysisService {
 
     }
 
+    @Override
+    public PhotoAnalysisResponse.ConfirmResponse confirm(Long userId, Long photoAnalysisId, Long selectedFoodId) {
+        var pa = photoAnalysisRepository.findById(photoAnalysisId)
+                .orElseThrow(() -> new IllegalArgumentException("photoAnalysis not found: " + photoAnalysisId));
+
+        // 1. 음식 확정 반영
+        var food = foodRepository.findById(selectedFoodId)
+                .orElseThrow(() -> new IllegalArgumentException("food not found: " + selectedFoodId));
+        pa.setSelectedFood(food);
+        pa.updatePhotoAnalysisStatus(PhotoAnalysisStatus.USER_CONFIRMED);
+
+        // 2. 영양 상세 구성 (Calories 분리)
+        Map<String, PhotoAnalysisResponse.NutrientValue> nutrients = nutrientsWithoutCalories(food);
+        BigDecimal calories = food.getCalories();
+
+        var selected = PhotoAnalysisResponse.ConfirmSelected.builder()
+                .foodId(food.getId())
+                .name(food.getName())
+                .category(food.getCategory())
+                .serving(food.getSourceName())
+                .calories(calories)      // 별도 필드
+                .nutrients(nutrients)    // 칼로리는 제외
+                .build();
+
+        return PhotoAnalysisResponse.ConfirmResponse.builder()
+                .photoAnalysisId(photoAnalysisId)
+                .status(PhotoAnalysisStatus.USER_CONFIRMED.name())
+                .selected(selected)
+                .build();
+    }
+
     private String guessExt(String filename) {
         if (filename == null) return ".jpg";
         String f = filename.toLowerCase();
@@ -134,4 +174,27 @@ public class PhotoAnalysisServiceImpl implements PhotoAnalysisService {
         if (f.endsWith(".jpeg")) return ".jpeg";
         return ".jpg";
     }
+
+    private Map<String, PhotoAnalysisResponse.NutrientValue> nutrientsWithoutCalories(Food food) {
+        List<FoodNutrient> list = foodNutrientRepository.findByFoodId(food.getId());
+
+        Map<String, PhotoAnalysisResponse.NutrientValue> map = new LinkedHashMap<>();
+
+        for (FoodNutrient fn : list) {
+            String key  = normalizeKey(fn.getNutrient().getName()); // 예: "carbs"
+
+            if ("calories".equals(key)) continue; // 칼로리는 제외 (별도 필드)
+
+            String unit = unitSymbol(fn.getNutrient().getUnit());   // "g" | "mg" | "μg"
+
+            map.put(key, PhotoAnalysisResponse.NutrientValue.builder()
+                    .value(fn.getValue())
+                    .unit(unit)
+                    .build());
+        }
+        return map;
+    }
+
+    private String normalizeKey(String s) { return s == null ? null : s.toLowerCase(); }
+    private String unitSymbol(Unit u) { return (u == null) ? null : u.name().toLowerCase(); }
 }

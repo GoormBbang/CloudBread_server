@@ -53,4 +53,16 @@ public class PhotoAnalysisRestController {
         return sse.subscribe(photoAnalysisId);
     }
 
+    // 4) 음식 후보 3개 중, 1개 선택 (영양상세정보)
+    @PostMapping("/photo-analyses/{photoAnalysisId}/confirm")
+    public BaseResponse<PhotoAnalysisResponse.ConfirmResponse> confirm(
+            @PathVariable Long photoAnalysisId,
+            @RequestBody @Valid PhotoAnalysisRequest.ConfirmRequest req,
+            @AuthenticationPrincipal CustomOAuth2User principal
+    ) {
+        Long userId = principal.getUserId();
+        var res = photoAnalysisService.confirm(userId, photoAnalysisId, req.getSelectedFoodId());
+
+        return BaseResponse.onSuccess(SuccessStatus._OK, res);
+    }
 }
