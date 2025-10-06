@@ -62,7 +62,10 @@ public class SecurityConfig {
                                 "/api/admin/foods/import", // foods 데이터 seeder,
                                 "/api/refresh-token", // refresh token (토큰 갱신),
                                 "/crawl",// crawling
-                                "/seed/**"
+                                "/seed/**",
+                                "/api/ai/**", // ai가 백엔드로 요청보낼 때, 토큰 요청하지 않도록,
+                                "/uploads/**",
+                                "/api/photo-analyses/*/events" // 프론트가 이벤트 구독하는 api
                         )
                         .permitAll()
                         .anyRequest().authenticated() // 그외 요청은 허가된 사람만 인가
