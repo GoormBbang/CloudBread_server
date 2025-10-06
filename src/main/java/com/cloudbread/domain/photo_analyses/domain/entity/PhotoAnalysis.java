@@ -91,6 +91,10 @@ public class PhotoAnalysis extends BaseEntity {
         this.candidatesJson = json;
         this.photoAnalysisStatus = status; // CANDIDATES_READY or NO_CANDIDATES
     }
+
+    public void setSelectedFood(Food food){
+        this.food = food;
+    }
 }
 
 
