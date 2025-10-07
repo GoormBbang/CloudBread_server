@@ -5,6 +5,7 @@ import com.cloudbread.domain.food_history.application.FoodHistoryService;
 import com.cloudbread.domain.food_history.dto.FoodHistoryCalendarDto;
 import com.cloudbread.domain.food_history.dto.FoodHistoryRequest;
 import com.cloudbread.domain.food_history.dto.FoodHistoryResponse;
+import com.cloudbread.global.common.code.status.ErrorStatus;
 import com.cloudbread.global.common.code.status.SuccessStatus;
 import com.cloudbread.global.common.response.BaseResponse;
 import jakarta.validation.Valid;
@@ -47,10 +48,12 @@ public class FoodHistoryRestController {
 
         FoodHistoryCalendarDto result = foodHistoryService.getMonthlyCalendar(userId, year, month);
 
+        // ✅ 식단 데이터 없을 때 실패 응답
         if (result.getDays() == null || result.getDays().isEmpty()) {
-            return BaseResponse.onSuccess(SuccessStatus.CALENDAR_GET_EMPTY, result);
+            return BaseResponse.onFailure(ErrorStatus.CALENDAR_GET_EMPTY, result);
         }
 
+        // ✅ 데이터가 존재할 때만 성공
         return BaseResponse.onSuccess(SuccessStatus.CALENDAR_GET_SUCCESS, result);
     }
 }

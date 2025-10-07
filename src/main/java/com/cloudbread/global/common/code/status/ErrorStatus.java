@@ -24,7 +24,8 @@ public enum ErrorStatus implements BaseErrorCode {
     REFRESH_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "TOKEN_404", "리프레시 토큰을 찾을 수 없습니다."),
     TOKEN_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "TOKEN_401", "리프레시 토큰 인증 실패입니다."),
 
-
+    //calender
+    CALENDAR_GET_EMPTY(HttpStatus.NO_CONTENT, "CALENDAR_MONTH_EMPTY", "조회 가능한 식단이 없습니다.")
 
     ;
 

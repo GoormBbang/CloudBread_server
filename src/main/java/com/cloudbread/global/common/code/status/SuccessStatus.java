@@ -45,8 +45,7 @@ public enum SuccessStatus implements BaseCode {
     NUTRITION_STATS_SUCCESS(HttpStatus.OK, "NUTRITION_STATS_SUCCESS", "영양 분석이 성공적으로 조회되었습니다."),
 
     //calender
-    CALENDAR_GET_SUCCESS(HttpStatus.OK, "CALENDAR_MONTH_SUCCESS", "조회 가능한 식단이 있습니다."),
-    CALENDAR_GET_EMPTY(HttpStatus.OK, "CALENDAR_MONTH_EMPTY", "조회 가능한 식단이 없습니다.")
+    CALENDAR_GET_SUCCESS(HttpStatus.OK, "CALENDAR_MONTH_SUCCESS", "조회 가능한 식단이 있습니다.")
 
 
     ;
