@@ -14,5 +14,13 @@ import java.util.List;
 public interface UserFoodHistoryRepository extends JpaRepository<UserFoodHistory, Long> {
     @Query("SELECT f FROM UserFoodHistory f WHERE f.user.id = :userId AND f.createdAt > :fromDate ORDER BY f.createdAt DESC")
     List<UserFoodHistory> findRecentByUserId(@Param("userId") Long userId, @Param("fromDate") LocalDateTime fromDate);
+
+    // ✅ 오늘의 영양 분석용 (createdAt 기준)
+    List<UserFoodHistory> findByUserIdAndCreatedAtBetween(
+            Long userId,
+            LocalDateTime startDate,
+            LocalDateTime endDate
+    );
+
 }
 

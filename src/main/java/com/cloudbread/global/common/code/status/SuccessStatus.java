@@ -39,7 +39,10 @@ public enum SuccessStatus implements BaseCode {
     PHOTO_UPLOAD_SUCCESS(HttpStatus.OK, "PHOTO_400", "사진이 정상적으로 업로드되었습니다."),
 
     // food-history
-    FOOD_HISTORY_CREATED(HttpStatus.CREATED, "FOOD_HISTORY_CREATED", "섭취 기록이 저장되었습니다")
+    FOOD_HISTORY_CREATED(HttpStatus.CREATED, "FOOD_HISTORY_CREATED", "섭취 기록이 저장되었습니다"),
+
+    //nutrition
+    NUTRITION_STATS_SUCCESS(HttpStatus.OK, "NUTRITION_STATS_SUCCESS", "영양 분석이 성공적으로 조회되었습니다.")
 
     ;
 
