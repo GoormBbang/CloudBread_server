@@ -313,54 +313,6 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
         return rec;
     }
 
-//    private Map<String, Double> getRecommendedIntake(String stage) {
-//        Map<String, Double> rec = new HashMap<>();
-//        switch (stage) {
-//            case "EARLY" -> { // 임신 초기
-//                rec.put("PROTEIN", 60.0);
-//                rec.put("CARBOHYDRATE", 300.0);
-//                rec.put("FAT", 60.0);
-//            }
-//            case "MIDDLE" -> { // 임신 중기
-//                rec.put("PROTEIN", 70.0);
-//                rec.put("CARBOHYDRATE", 320.0);
-//                rec.put("FAT", 70.0);
-//            }
-//            case "LATE" -> { // 임신 후기
-//                rec.put("PROTEIN", 80.0);
-//                rec.put("CARBOHYDRATE", 340.0);
-//                rec.put("FAT", 70.0);
-//            }
-//            default -> {
-//                rec.put("PROTEIN", 65.0);
-//                rec.put("CARBOHYDRATE", 310.0);
-//                rec.put("FAT", 65.0);
-//            }
-//        }
-//        return rec;
-//    }
-
-    // 🔹 (D) 부족 영양소 계산 로직
-//    private NutrientCalculationResult calculateDeficiency(Map<String, Double> intake, String stage) {
-//        Map<String, Double> recommended = getRecommendedIntake(stage);
-//        log.info("[Nutrition] 권장 섭취량 기준: {}", recommended);
-//
-//        String lacking = null;
-//        double lackingValue = 0.0;
-//
-//        for (String key : recommended.keySet()) {
-//            double intakeVal = intake.getOrDefault(key, 0.0);
-//            double recommendedVal = recommended.get(key);
-//            if (intakeVal < recommendedVal) {
-//                lacking = key;
-//                lackingValue = recommendedVal - intakeVal;
-//                break;
-//            }
-//        }
-//
-//        log.info("[Nutrition] 부족 영양소 계산 결과 => {}: {}g 부족", lacking, lackingValue);
-//        return new NutrientCalculationResult(lacking, lackingValue);
-//    }
     private NutrientCalculationResult calculateDeficiency(Map<String, Double> intakeMap, String stage) {
         Map<String, Double> recommendedIntake = getRecommendedIntake(stage);
 
@@ -401,8 +353,6 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
 
         return new NutrientCalculationResult(lackingNutrient, lackingValue);
     }
-
-
 
     // 🔹 (E) 임신 주차 계산
     private int calculatePregnancyWeek(LocalDate dueDate) {
