@@ -14,6 +14,12 @@ ai:
     enabled: false            # 로컬에선 AI 호출 건너뜀
     base-url: "http://localhost:8000"  # (의미 없음, enabled=false라 호출 안 함)
 
+# ai 챗봇 (로컬) ingress controller 거쳐서
+
+  chat:
+    base-url: http://cloudbread.133.186.213.185.nip.io
+
+
 # application-local.yml
 swagger:
   server-url: http://localhost:8080

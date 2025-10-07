@@ -24,6 +24,11 @@ public enum ErrorStatus implements BaseErrorCode {
     REFRESH_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "TOKEN_404", "리프레시 토큰을 찾을 수 없습니다."),
     TOKEN_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "TOKEN_401", "리프레시 토큰 인증 실패입니다."),
 
+    // --- Session ---
+    SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "SESSION_404", "세션이 존재하지 않습니다."),
+    SESSION_EXPIRED(HttpStatus.UNAUTHORIZED, "SESSION_401", "세션이 만료되었습니다. 다시 발급해주세요"),
+    SESSION_MISMATCH(HttpStatus.CONFLICT, "SESSION_409", "세션유저와 로그인한유저의 정보가 일치하지 않습니다")
+
 
 
     ;

@@ -16,4 +16,12 @@ public interface UserDietRepository extends JpaRepository<UserDiet, Long> {
     @Modifying
     @Query("delete from UserDiet ud where ud.user.id = :userId")
     void deleteByUserId(@Param("userId") Long userId);
+
+    @Query("""
+           select ud
+           from UserDiet ud
+           join fetch ud.dietType dt
+           where ud.user.id = :userId
+           """)
+    List<UserDiet> findWithDietTypeByUserId(Long userId);
 }
