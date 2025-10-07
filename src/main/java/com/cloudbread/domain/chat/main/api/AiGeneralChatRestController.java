@@ -30,4 +30,14 @@ public class AiGeneralChatRestController {
         var res = aiGeneralChatService.createSession(principal.getUserId(), req);
         return BaseResponse.onSuccess(SuccessStatus.SESSION_CREATED_SUCCESS, res);
     }
+
+    /** 메시지 전송 */
+    @PostMapping("/message")
+    public BaseResponse<AiGeneralChatResponseGen.MessageGen> send(
+            @AuthenticationPrincipal CustomOAuth2User principal,
+            @Valid @RequestBody AiGeneralChatRequestGen.SendMessageGen req
+    ) {
+        var res = aiGeneralChatService.send(principal.getUserId(), req);
+        return BaseResponse.onSuccess(SuccessStatus._OK, res);
+    }
 }

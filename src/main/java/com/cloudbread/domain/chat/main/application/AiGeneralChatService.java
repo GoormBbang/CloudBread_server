@@ -6,4 +6,5 @@ import com.cloudbread.domain.chat.main.dto.AiGeneralChatResponseGen;
 
 public interface AiGeneralChatService {
     AiGeneralChatResponseGen.SessionCreatedGen createSession(Long userId, AiGeneralChatRequestGen.CreateSessionGen req);
+    AiGeneralChatResponseGen.MessageGen send(Long userId, AiGeneralChatRequestGen.SendMessageGen req);
 }
