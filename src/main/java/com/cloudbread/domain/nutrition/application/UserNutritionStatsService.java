@@ -1,0 +1,13 @@
+package com.cloudbread.domain.nutrition.application;
+
+import com.cloudbread.domain.nutrition.dto.TodayNutrientsStatsDto;
+
+public interface UserNutritionStatsService {
+
+    /**
+     * 오늘의 영양 통계 계산
+     * @param userId 사용자 ID
+     * @return 영양소 섭취 통계 DTO
+     */
+    TodayNutrientsStatsDto calculateTodayStats(Long userId);
+}
