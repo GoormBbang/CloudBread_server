@@ -32,7 +32,8 @@ public enum ErrorStatus implements BaseErrorCode {
 
 
     //calender
-    CALENDAR_GET_EMPTY(HttpStatus.NO_CONTENT, "CALENDAR_MONTH_EMPTY", "조회 가능한 식단이 없습니다.")
+    CALENDAR_GET_EMPTY(HttpStatus.NO_CONTENT, "CALENDAR_MONTH_EMPTY", "조회 가능한 식단이 없습니다."),
+    CALENDAR_SUMMARY_FAIL(HttpStatus.NO_CONTENT, "CALENDAR_SUMMARY_FAIL", "상세 조회 실패.")
 
 
     ;

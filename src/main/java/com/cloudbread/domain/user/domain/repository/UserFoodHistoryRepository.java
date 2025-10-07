@@ -38,5 +38,20 @@ public interface UserFoodHistoryRepository extends JpaRepository<UserFoodHistory
             @Param("endDate") LocalDateTime endDate
     );
 
+    /**
+     * 특정 사용자의 기간별 식단 기록 조회 (Food 정보 함께 Fetch)
+     * N+1 문제 해결을 위한 Join Fetch
+     */
+    @Query("SELECT ufh FROM UserFoodHistory ufh " +
+            "JOIN FETCH ufh.food " +
+            "WHERE ufh.user.id = :userId " +
+            "AND ufh.createdAt >= :startDate " +
+            "AND ufh.createdAt < :endDate")
+    List<UserFoodHistory> findByUserIdAndCreatedAtBetweenWithFood(
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
+
 }
 
