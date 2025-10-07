@@ -2,12 +2,15 @@ package com.cloudbread.domain.food_history.application;
 
 import com.cloudbread.domain.food.domain.entity.Food;
 import com.cloudbread.domain.food.domain.repository.FoodRepository;
+import com.cloudbread.domain.food_history.dto.DayMealCountDto;
+import com.cloudbread.domain.food_history.dto.FoodHistoryCalendarDto;
 import com.cloudbread.domain.food_history.dto.FoodHistoryRequest;
 import com.cloudbread.domain.food_history.dto.FoodHistoryResponse;
 import com.cloudbread.domain.photo_analyses.domain.entity.PhotoAnalysis;
 import com.cloudbread.domain.photo_analyses.domain.repository.PhotoAnalysisRepository;
 import com.cloudbread.domain.user.domain.entity.User;
 import com.cloudbread.domain.user.domain.entity.UserFoodHistory;
+import com.cloudbread.domain.user.domain.enums.MealType;
 import com.cloudbread.domain.user.domain.repository.UserFoodHistoryRepository;
 import com.cloudbread.domain.user.domain.repository.UserRepository;
 import com.cloudbread.domain.user.exception.UserNotFoundException;
@@ -16,9 +19,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -69,4 +76,42 @@ public class FoodHistoryServiceImpl implements FoodHistoryService {
                 .build();
     }
 
+    // ─────────────────────────────────────────────
+    // 📅 월별 식단 기록 조회
+    // ─────────────────────────────────────────────
+    @Transactional(readOnly = true)
+    @Override
+    public FoodHistoryCalendarDto getMonthlyCalendar(Long userId, Integer year, Integer month) {
+        LocalDate firstDay = LocalDate.of(year, month, 1);
+        LocalDate lastDay = firstDay.withDayOfMonth(firstDay.lengthOfMonth());
+
+        LocalDateTime start = firstDay.atStartOfDay();
+        LocalDateTime end = lastDay.plusDays(1).atStartOfDay();
+
+        //log.info("📆 [식단 캘린더 조회] userId={}, 기간: {} ~ {}", userId, start, end);
+
+        List<UserFoodHistory> histories = foodHistoryRepository.findByUserIdAndCreatedAtBetween(userId, start, end);
+
+        if (histories.isEmpty()) {
+            return FoodHistoryCalendarDto.createEmpty(year, month);
+        }
+
+        // 날짜별 끼니 수 계산
+        Map<Integer, Set<MealType>> mealsByDay = new HashMap<>();
+        for (UserFoodHistory h : histories) {
+            int day = h.getCreatedAt().getDayOfMonth();
+            mealsByDay.computeIfAbsent(day, k -> new HashSet<>()).add(h.getMealType());
+        }
+
+        List<DayMealCountDto> days = mealsByDay.entrySet().stream()
+                .map(entry -> DayMealCountDto.of(entry.getKey(), entry.getValue().size()))
+                .sorted(Comparator.comparing(DayMealCountDto::getDay))
+                .toList();
+
+        return FoodHistoryCalendarDto.builder()
+                .year(year)
+                .month(month)
+                .days(days)
+                .build();
+    }
 }
