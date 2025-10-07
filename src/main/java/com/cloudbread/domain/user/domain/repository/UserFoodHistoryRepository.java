@@ -53,5 +53,10 @@ public interface UserFoodHistoryRepository extends JpaRepository<UserFoodHistory
             @Param("endDate") LocalDateTime endDate
     );
 
+    //영양요약
+    @Query("SELECT h FROM UserFoodHistory h JOIN FETCH h.food f WHERE h.user.id = :userId AND DATE(h.createdAt) = :date")
+    List<UserFoodHistory> findByUserIdAndDateWithFood(@Param("userId") Long userId, @Param("date") LocalDate date);
+
+
 }
 

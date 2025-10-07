@@ -3,11 +3,13 @@ package com.cloudbread.domain.nutrition.application;
 import com.cloudbread.domain.food.domain.entity.FoodNutrient;
 import com.cloudbread.domain.food.domain.repository.FoodNutrientRepository;
 //import com.cloudbread.domain.nutrition.domain.repository.NutritionFoodNutrientRepository;
+import com.cloudbread.domain.nutrition.constant.RecommendedNutrientConstants;
 import com.cloudbread.domain.nutrition.dto.TodayNutrientsStatsDto;
 import com.cloudbread.domain.nutrition.model.NutrientCalculationResult;
 import com.cloudbread.domain.user.domain.entity.UserFoodHistory;
 import com.cloudbread.domain.user.domain.repository.UserFoodHistoryRepository;
 
+import com.cloudbread.domain.user.domain.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,8 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import java.math.BigDecimal;
@@ -32,6 +34,7 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
 
     private final UserFoodHistoryRepository userFoodHistoryRepository;
     private final FoodNutrientRepository foodNutrientRepository;
+    private final UserRepository userRepository;
 
     // ✅ 임산부 일일 권장 섭취량
     private static final double FOLIC_ACID_DRI = 600.0;  // μg
@@ -158,4 +161,261 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
         if (dri <= 0) return 0;
         return (int)Math.round(actual / dri * 100.0);
     }
+
+    @Override
+    public List<TodayNutrientsStatsDto> getTodaySummary(Long userId, LocalDate date) {
+        log.info("[Nutrition] 요약 조회 userId={}, date={}", userId, date);
+
+        // 1️⃣ 오늘 먹은 식단 조회
+        List<UserFoodHistory> histories =
+                userFoodHistoryRepository.findByUserIdAndDateWithFood(userId, date);
+
+        if (histories.isEmpty()) {
+            log.warn("[Nutrition] 식단 기록 없음");
+            return Collections.emptyList();
+        }
+
+        // 2️⃣ 섭취한 음식 ID 추출
+        List<Long> foodIds = histories.stream()
+                .map(h -> h.getFood().getId())
+                .distinct()
+                .toList();
+
+        // 3️⃣ 음식별 영양소 + intake_percent 반영하여 총합 계산
+        Map<String, Double> intakeMap = calculateIntakeWithPercent(histories, foodIds);
+
+        // 4️⃣ 임신 주차 / 단계 계산
+        LocalDate dueDate = userRepository.findDueDateByUserId(userId);
+        if (dueDate == null) {
+            log.warn("[Nutrition] 출산 예정일 정보 없음 - userId={}", userId);
+            return Collections.emptyList();
+        }
+
+        int pregnancyWeek = calculatePregnancyWeek(dueDate);
+        String stage = determinePregnancyStage(pregnancyWeek);
+        log.info("[Nutrition] 현재 임신 {}주차 - 단계: {}", pregnancyWeek, stage);
+
+        // 5️⃣ 부족 영양소 계산
+        NutrientCalculationResult result = calculateDeficiency(intakeMap, stage);
+        String comment = (result.getDeficientNutrient() == null)
+                ? "목표 달성"
+                : "목표 미달";
+
+        return List.of(
+                TodayNutrientsStatsDto.builder()
+                        .totalCalories((int) Math.round(intakeMap.getOrDefault("CALORIES", 0.0)))
+                        .comment(comment)
+                        .lackedValue((double) Math.round(result.getDeficientValue())) // ✅ 소수점 첫째 자리에서 반올림
+                        .lackedNutrient(result.getDeficientNutrient())
+                        .build()
+        );
+
+
+    }
+
+    // 🔹 (A) 음식별 섭취량 계산
+    private Map<String, Double> calculateIntakeWithPercent(List<UserFoodHistory> histories, List<Long> foodIds) {
+        List<FoodNutrient> nutrients = foodNutrientRepository.findByFoodIdsWithNutrient(foodIds);
+        Map<String, Double> total = new HashMap<>();
+
+        for (UserFoodHistory history : histories) {
+            double factor = history.getIntakePercent() / 100.0;
+            Long foodId = history.getFood().getId();
+
+            nutrients.stream()
+                    .filter(fn -> fn.getFood().getId().equals(foodId))
+                    .forEach(fn -> {
+                        String name = normalizeNutrientName(fn.getNutrient().getName());
+                        total.merge(name, fn.getValue().doubleValue() * factor, Double::sum);
+                    });
+        }
+
+        // 칼로리도 포함
+        double totalCalories = histories.stream()
+                .mapToDouble(h -> Optional.ofNullable(h.getFood().getCalories())
+                        .map(Number::doubleValue)
+                        .orElse(0.0) * (h.getIntakePercent() / 100.0))
+                .sum();
+        total.put("CALORIES", totalCalories);
+
+        log.info("[Nutrition] 총 섭취량 계산 결과: {}", total);
+        return total;
+    }
+
+    // 🔹 (B) 영양소 이름 통일
+    private String normalizeNutrientName(String raw) {
+        if (raw == null) return "";
+        return raw.replaceAll("[^가-힣A-Za-z]", "").toUpperCase(); // 단백질(g) → 단백질 → DANBAEGIL → UPPER
+    }
+
+    // 🔹 (C) 임신 단계별 권장 섭취량
+    private Map<String, Double> getRecommendedIntake(String stage) {
+        Map<String, Double> rec = new HashMap<>();
+
+        switch (stage) {
+            case "EARLY" -> {
+                rec.put("PROTEINS", 60.0);
+                rec.put("CARBS", 300.0);
+                rec.put("FATS", 60.0);
+                rec.put("CALCIUM", 900.0);
+                rec.put("IRON", 20.0);
+                rec.put("FOLIC_ACID", 480.0);
+                rec.put("SODIUM", 1500.0);
+                rec.put("CHOLESTEROL", 300.0);
+                rec.put("TRANS_FAT", 2.0);
+                rec.put("SATURATED_FAT", 15.0);
+                rec.put("SUGARS", 50.0);
+                rec.put("MOISTURE", 2000.0);
+            }
+            case "MIDDLE" -> {
+                rec.put("PROTEINS", 70.0);
+                rec.put("CARBS", 320.0);
+                rec.put("FATS", 70.0);
+                rec.put("CALCIUM", 950.0);
+                rec.put("IRON", 24.0);
+                rec.put("FOLIC_ACID", 480.0);
+                rec.put("SODIUM", 1500.0);
+                rec.put("CHOLESTEROL", 300.0);
+                rec.put("TRANS_FAT", 2.0);
+                rec.put("SATURATED_FAT", 15.0);
+                rec.put("SUGARS", 50.0);
+                rec.put("MOISTURE", 2000.0);
+            }
+            case "LATE" -> {
+                rec.put("PROTEINS", 80.0);
+                rec.put("CARBS", 340.0);
+                rec.put("FATS", 70.0);
+                rec.put("CALCIUM", 1000.0);
+                rec.put("IRON", 27.0);
+                rec.put("FOLIC_ACID", 500.0);
+                rec.put("SODIUM", 1500.0);
+                rec.put("CHOLESTEROL", 300.0);
+                rec.put("TRANS_FAT", 2.0);
+                rec.put("SATURATED_FAT", 15.0);
+                rec.put("SUGARS", 50.0);
+                rec.put("MOISTURE", 2000.0);
+            }
+            default -> {
+                rec.put("PROTEINS", 65.0);
+                rec.put("CARBS", 310.0);
+                rec.put("FATS", 65.0);
+                rec.put("CALCIUM", 900.0);
+                rec.put("IRON", 18.0);
+                rec.put("FOLIC_ACID", 400.0);
+                rec.put("SODIUM", 1500.0);
+                rec.put("CHOLESTEROL", 300.0);
+                rec.put("TRANS_FAT", 2.0);
+                rec.put("SATURATED_FAT", 15.0);
+                rec.put("SUGARS", 50.0);
+                rec.put("MOISTURE", 2000.0);
+            }
+        }
+        return rec;
+    }
+
+//    private Map<String, Double> getRecommendedIntake(String stage) {
+//        Map<String, Double> rec = new HashMap<>();
+//        switch (stage) {
+//            case "EARLY" -> { // 임신 초기
+//                rec.put("PROTEIN", 60.0);
+//                rec.put("CARBOHYDRATE", 300.0);
+//                rec.put("FAT", 60.0);
+//            }
+//            case "MIDDLE" -> { // 임신 중기
+//                rec.put("PROTEIN", 70.0);
+//                rec.put("CARBOHYDRATE", 320.0);
+//                rec.put("FAT", 70.0);
+//            }
+//            case "LATE" -> { // 임신 후기
+//                rec.put("PROTEIN", 80.0);
+//                rec.put("CARBOHYDRATE", 340.0);
+//                rec.put("FAT", 70.0);
+//            }
+//            default -> {
+//                rec.put("PROTEIN", 65.0);
+//                rec.put("CARBOHYDRATE", 310.0);
+//                rec.put("FAT", 65.0);
+//            }
+//        }
+//        return rec;
+//    }
+
+    // 🔹 (D) 부족 영양소 계산 로직
+//    private NutrientCalculationResult calculateDeficiency(Map<String, Double> intake, String stage) {
+//        Map<String, Double> recommended = getRecommendedIntake(stage);
+//        log.info("[Nutrition] 권장 섭취량 기준: {}", recommended);
+//
+//        String lacking = null;
+//        double lackingValue = 0.0;
+//
+//        for (String key : recommended.keySet()) {
+//            double intakeVal = intake.getOrDefault(key, 0.0);
+//            double recommendedVal = recommended.get(key);
+//            if (intakeVal < recommendedVal) {
+//                lacking = key;
+//                lackingValue = recommendedVal - intakeVal;
+//                break;
+//            }
+//        }
+//
+//        log.info("[Nutrition] 부족 영양소 계산 결과 => {}: {}g 부족", lacking, lackingValue);
+//        return new NutrientCalculationResult(lacking, lackingValue);
+//    }
+    private NutrientCalculationResult calculateDeficiency(Map<String, Double> intakeMap, String stage) {
+        Map<String, Double> recommendedIntake = getRecommendedIntake(stage);
+
+        String lackingNutrient = null;
+        double lackingValue = 0.0;
+
+        log.info("[Nutrition] 영양소 섭취량 비교 (단위: g)");
+        log.info("임신 단계: {}", stage);
+        log.info("--------------------------------------------");
+        log.info("영양소 | 섭취량 | 권장량 | 부족량");
+
+        for (Map.Entry<String, Double> entry : recommendedIntake.entrySet()) {
+            String nutrient = entry.getKey();
+            double recommended = entry.getValue();
+            double intake = intakeMap.getOrDefault(nutrient, 0.0);
+            double lack = Math.max(0, recommended - intake);
+
+            log.info("{} | {} | {} | {}",
+                    nutrient,
+                    String.format("%.2f", intake),
+                    String.format("%.2f", recommended),
+                    String.format("%.2f", lack)
+            );
+
+            if (lack > lackingValue) {
+                lackingValue = lack;
+                lackingNutrient = nutrient;
+            }
+        }
+
+        log.info("--------------------------------------------");
+        log.info("[Nutrition] 부족 영양소 계산 결과 => {}: {}g 부족",
+                lackingNutrient, String.format("%.2f", lackingValue)
+        );
+
+
+        log.info("--------------------------------------------");
+
+        return new NutrientCalculationResult(lackingNutrient, lackingValue);
+    }
+
+
+
+    // 🔹 (E) 임신 주차 계산
+    private int calculatePregnancyWeek(LocalDate dueDate) {
+        LocalDate today = LocalDate.now();
+        long weeks = ChronoUnit.WEEKS.between(dueDate.minusWeeks(40), today);
+        return (int) Math.max(weeks, 0);
+    }
+
+    // 🔹 (F) 임신 단계 구분
+    private String determinePregnancyStage(int week) {
+        if (week <= 12) return "EARLY";
+        else if (week <= 27) return "MIDDLE";
+        else return "LATE";
+    }
+
 }
