@@ -1,11 +1,14 @@
 package com.cloudbread.domain.food_history.application;
 
 import com.cloudbread.domain.food.domain.entity.Food;
+import com.cloudbread.domain.food.domain.entity.FoodNutrient;
+import com.cloudbread.domain.food.domain.repository.FoodNutrientRepository;
 import com.cloudbread.domain.food.domain.repository.FoodRepository;
 import com.cloudbread.domain.food_history.dto.DayMealCountDto;
 import com.cloudbread.domain.food_history.dto.FoodHistoryCalendarDto;
 import com.cloudbread.domain.food_history.dto.FoodHistoryRequest;
 import com.cloudbread.domain.food_history.dto.FoodHistoryResponse;
+import com.cloudbread.domain.nutrition.constant.RecommendedNutrientConstants;
 import com.cloudbread.domain.photo_analyses.domain.entity.PhotoAnalysis;
 import com.cloudbread.domain.photo_analyses.domain.repository.PhotoAnalysisRepository;
 import com.cloudbread.domain.user.domain.entity.User;
@@ -22,7 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -34,6 +40,9 @@ public class FoodHistoryServiceImpl implements FoodHistoryService {
     private final FoodRepository foodRepository;
     private final UserFoodHistoryRepository foodHistoryRepository;
     private final PhotoAnalysisRepository photoAnalysisRepository;
+
+    private final UserFoodHistoryRepository userFoodHistoryRepository;
+    private final FoodNutrientRepository foodNutrientRepository;
 
     @Override
     public FoodHistoryResponse.Created create(Long userId, FoodHistoryRequest.Create req) {
@@ -77,7 +86,7 @@ public class FoodHistoryServiceImpl implements FoodHistoryService {
     }
 
     // ─────────────────────────────────────────────
-    // 📅 월별 식단 기록 조회
+    // 월별 식단 기록 조회
     // ─────────────────────────────────────────────
     @Transactional(readOnly = true)
     @Override
@@ -114,4 +123,254 @@ public class FoodHistoryServiceImpl implements FoodHistoryService {
                 .days(days)
                 .build();
     }
+
+    // ────────────────────────────────────────────────
+    // 특정 날짜 상세 조회 (캘린더 일별 상세)
+    // ────────────────────────────────────────────────
+    @Transactional(readOnly = true)
+    @Override
+    public FoodHistoryResponse.CalendarDailySummaryDto getDailySummary(Long userId, LocalDate date) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+
+        String pregnancyStage = getPregnancyStage(user);
+
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
+
+        // Join Fetch로 Food 정보 함께 조회
+        List<UserFoodHistory> dailyHistory = foodHistoryRepository
+                .findByUserIdAndCreatedAtBetweenWithFood(userId, startOfDay, endOfDay);
+
+        // 식단이 없을 경우 → 예외 발생 (false 응답 유도)
+        if (dailyHistory.isEmpty()) {
+            log.warn("[식단 상세 조회 실패] userId={}, date={}", userId, date);
+            throw new IllegalArgumentException("식단이 없습니다.");
+        }
+
+        Map<MealType, List<UserFoodHistory>> historyByMeal =
+                dailyHistory.stream().collect(Collectors.groupingBy(UserFoodHistory::getMealType));
+
+        List<FoodHistoryResponse.MealSummaryDto> mealSummaries = new ArrayList<>();
+        int totalDayCalories = 0;
+
+        for (var entry : historyByMeal.entrySet()) {
+            FoodHistoryResponse.MealSummaryDto mealSummary = calculateMealSummary(entry.getKey(), entry.getValue());
+            mealSummaries.add(mealSummary);
+            totalDayCalories += mealSummary.getTotalCalories();
+        }
+
+        FoodHistoryResponse.NutritionTotalsDto dayNutrition = calculateDayNutrition(dailyHistory);
+        List<FoodHistoryResponse.CalendarDailySummaryDto.MealIntakeLevelDto> intakeMessages =
+                generateIntakeMessageWithRecommended(historyByMeal, dayNutrition, pregnancyStage);
+
+        return FoodHistoryResponse.CalendarDailySummaryDto.builder()
+                .date(date)
+                .totalCalories(totalDayCalories)
+                .nutritionTotals(dayNutrition)
+                .meals(mealSummaries)
+                .intakeMessages(intakeMessages)
+                .build();
+    }
+
+    // ────────────────────────────────────────────────
+    // 임신 주차 계산
+    // ────────────────────────────────────────────────
+    private String getPregnancyStage(User user) {
+        if (user.getDueDate() == null) return "MID";
+
+        long weeksUntilDue = ChronoUnit.WEEKS.between(LocalDate.now(), user.getDueDate());
+        long currentWeek = 40 - weeksUntilDue;
+
+        if (currentWeek <= 12) return "EARLY";
+        else if (currentWeek <= 28) return "MID";
+        else return "LATE";
+    }
+
+    // ────────────────────────────────────────────────
+    // 끼니별 요약 계산
+    // ────────────────────────────────────────────────
+    private FoodHistoryResponse.MealSummaryDto calculateMealSummary(MealType mealType, List<UserFoodHistory> histories) {
+        List<FoodHistoryResponse.FoodItemDto> foods = histories.stream()
+                .map(h -> {
+                    Food food = h.getFood();
+
+                    // ✅ BigDecimal -> double 변환
+                    double calories = (food.getCalories() instanceof java.math.BigDecimal)
+                            ? ((java.math.BigDecimal) food.getCalories()).doubleValue()
+                            : ((Number) food.getCalories()).doubleValue();
+
+                    int actualCalories = (int) (calories * h.getIntakePercent() / 100.0);
+
+                    return FoodHistoryResponse.FoodItemDto.builder()
+                            .foodName(food.getName())
+                            .category(food.getCategory()) // imageUrl → category
+                            .calories(actualCalories)
+                            .build();
+                })
+                .toList();
+
+        int totalCalories = foods.stream().mapToInt(FoodHistoryResponse.FoodItemDto::getCalories).sum();
+
+        return FoodHistoryResponse.MealSummaryDto.builder()
+                .mealType(mealType.name())
+                .totalCalories(totalCalories)
+                .foods(foods)
+                .build();
+    }
+
+
+    // ────────────────────────────────────────────────
+    // 하루 전체 영양소 계산
+    // ────────────────────────────────────────────────
+    private FoodHistoryResponse.NutritionTotalsDto calculateDayNutrition(List<UserFoodHistory> dailyHistory) {
+        List<Long> foodIds = dailyHistory.stream()
+                .map(h -> h.getFood().getId())
+                .distinct()
+                .toList();
+
+        List<FoodNutrient> nutrients = foodNutrientRepository.findByFoodIdsWithNutrient(foodIds);
+        Map<Long, List<FoodNutrient>> nutrientsByFood = nutrients.stream()
+                .collect(Collectors.groupingBy(fn -> fn.getFood().getId()));
+
+        double carbs = 0, protein = 0, fat = 0, sugar = 0;
+
+        for (UserFoodHistory history : dailyHistory) {
+            double ratio = history.getIntakePercent() / 100.0; // ✅ ratio는 여기서 선언
+            List<FoodNutrient> fnList = nutrientsByFood.get(history.getFood().getId());
+            if (fnList == null) continue;
+
+            for (FoodNutrient fn : fnList) {
+                String name = fn.getNutrient().getName().toUpperCase();
+
+                // ✅ BigDecimal -> double 변환
+                double val = (fn.getValue() instanceof java.math.BigDecimal)
+                        ? ((java.math.BigDecimal) fn.getValue()).doubleValue() * ratio
+                        : ((Number) fn.getValue()).doubleValue() * ratio;
+
+                switch (name) {
+                    case "CARBS", "탄수화물" -> carbs += val;
+                    case "PROTEINS", "단백질" -> protein += val;
+                    case "FATS", "지방" -> fat += val;
+                    case "SUGARS", "당류" -> sugar += val;
+                    default -> {}
+                }
+            }
+        }
+
+        return FoodHistoryResponse.NutritionTotalsDto.builder()
+                .carbs((int) Math.round(carbs))
+                .protein((int) Math.round(protein))
+                .fat((int) Math.round(fat))
+                .sugar((int) Math.round(sugar))
+                .build();
+    }
+
+    // ────────────────────────────────────────────────
+    // 권장량 대비 메시지 생성
+    // ────────────────────────────────────────────────
+    private List<FoodHistoryResponse.CalendarDailySummaryDto.MealIntakeLevelDto> generateIntakeMessageWithRecommended(
+            Map<MealType, List<UserFoodHistory>> historyByMeal,
+            FoodHistoryResponse.NutritionTotalsDto dayNutrition,
+            String pregnancyStage) {
+
+        Map<MealType, Integer> caloriesByMeal = new HashMap<>();
+        for (var entry : historyByMeal.entrySet()) {
+            int mealCalories = entry.getValue().stream()
+                    .mapToInt(h -> {
+                        double calories = (h.getFood().getCalories() instanceof java.math.BigDecimal)
+                                ? ((java.math.BigDecimal) h.getFood().getCalories()).doubleValue()
+                                : ((Number) h.getFood().getCalories()).doubleValue();
+                        return (int) (calories * h.getIntakePercent() / 100.0);
+                    })
+                    .sum();
+            caloriesByMeal.put(entry.getKey(), mealCalories);
+        }
+
+        String carbsLevel = getIntakeLevel("CARBS", dayNutrition.getCarbs(), pregnancyStage);
+        String proteinLevel = getIntakeLevel("PROTEINS", dayNutrition.getProtein(), pregnancyStage);
+        String fatLevel = getIntakeLevel("FATS", dayNutrition.getFat(), pregnancyStage);
+
+        String overallLevel = determineOverallLevel(carbsLevel, proteinLevel, fatLevel);
+
+        // JSON 형태로 반환할 리스트 생성
+        List<FoodHistoryResponse.CalendarDailySummaryDto.MealIntakeLevelDto> intakeList = new ArrayList<>();
+
+        for (MealType mealType : MealType.values()) {
+            if (historyByMeal.containsKey(mealType)) {
+                String mealName = getMealName(mealType);
+                Integer mealCalories = caloriesByMeal.get(mealType);
+                String mealLevel = adjustLevelByMealProportion(overallLevel, mealType, mealCalories);
+
+                intakeList.add(
+                        FoodHistoryResponse.CalendarDailySummaryDto.MealIntakeLevelDto.builder()
+                                .mealType(mealName)
+                                .level(mealLevel)
+                                .build()
+                );
+            }
+        }
+
+        return intakeList;
+    }
+
+
+    // ────────────────────────────────────────────────
+    // 영양소 섭취 수준 비교
+    // ────────────────────────────────────────────────
+    private String getIntakeLevel(String nutrientName, Integer actualAmount, String pregnancyStage) {
+        Double recommended = RecommendedNutrientConstants.getRecommendedValue(nutrientName, pregnancyStage);
+        if (recommended == null || recommended == 0) return "적당히";
+
+        double ratio = actualAmount / recommended;
+        if (ratio < 0.7) return "적게";
+        else if (ratio <= 1.3) return "적당히";
+        else return "많이";
+    }
+
+    private String determineOverallLevel(String carbs, String protein, String fat) {
+        double score = (getLevelScore(carbs) + getLevelScore(protein) + getLevelScore(fat)) / 3.0;
+        if (score < 1.5) return "적게";
+        else if (score < 2.5) return "적당히";
+        else return "많이";
+    }
+
+    private int getLevelScore(String level) {
+        return switch (level) {
+            case "적게" -> 1;
+            case "적당히" -> 2;
+            case "많이" -> 3;
+            default -> 2;
+        };
+    }
+
+    // ────────────────────────────────────────────────
+    // 끼니별 수준 보정
+    // ────────────────────────────────────────────────
+    private String adjustLevelByMealProportion(String base, MealType type, Integer mealCalories) {
+        // 끼니별 기준 칼로리
+        int expected = switch (type) {
+            case BREAKFAST -> 550;
+            case LUNCH -> 770;
+            case DINNER -> 880;
+            default -> 700;
+        };
+
+
+        double ratio = (double) mealCalories / expected;
+        if (ratio < 0.5) return "적게";
+        else if (ratio > 1.5) return "많이";
+        else return base;
+    }
+
+    private String getMealName(MealType mealType) {
+        return switch (mealType) {
+            case BREAKFAST -> "아침";
+            case LUNCH -> "점심";
+            case DINNER -> "저녁";
+            default -> "기타";
+        };
+    }
+
+
 }
