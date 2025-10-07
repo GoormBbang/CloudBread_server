@@ -1,5 +1,6 @@
 package com.cloudbread.domain.user.domain.repository;
 
+import com.cloudbread.domain.food_history.dto.DayMealRecord;
 import com.cloudbread.domain.user.domain.entity.UserFoodHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -20,6 +21,21 @@ public interface UserFoodHistoryRepository extends JpaRepository<UserFoodHistory
             Long userId,
             LocalDateTime startDate,
             LocalDateTime endDate
+    );
+
+    @Query("""
+    SELECT new com.cloudbread.domain.food_history.dto.DayMealRecord(
+        DAY(ufh.createdAt),
+        ufh.mealType
+    )
+    FROM UserFoodHistory ufh
+    WHERE ufh.user.id = :userId
+    AND ufh.createdAt BETWEEN :startDate AND :endDate
+    """)
+    List<DayMealRecord> findMealRecordsByMonth(
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
     );
 
 }
