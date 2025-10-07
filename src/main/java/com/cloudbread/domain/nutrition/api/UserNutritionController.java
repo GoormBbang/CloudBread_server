@@ -78,43 +78,11 @@ public class UserNutritionController {
         return BaseResponse.onSuccess(SuccessStatus.NUTRITION_STATS_SUCCESS, result);
     }
 
-//    @GetMapping("/nutrition/summary")
-//    public BaseResponse<?> getTodaySummary(
-//            @AuthenticationPrincipal CustomOAuth2User userDetails,
-//            @RequestParam(required = false)
-//            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
-//    ) {
-//        if (userDetails == null || userDetails.getUser() == null) {
-//            log.warn("[Nutrition] 인증 정보 없음");
-//            return BaseResponse.onFailure(ErrorStatus._UNAUTHORIZED, "인증이 필요합니다.", "/api/users/me/nutrition/summary");
-//        }
-//
-//        Long userId = userDetails.getUser().getId();
-//        LocalDate targetDate = (date != null) ? date : LocalDate.now();
-//
-//        log.info("[Nutrition] 요약 요청 userId={}, date={}", userId, targetDate);
-//
-//        List<TodayNutrientsStatsDto> summaries = nutritionStatsService.getTodaySummary(userId, targetDate);
-//
-//        if (summaries.isEmpty()) {
-//            log.info("[Nutrition] 식단 기록 없음");
-//            return BaseResponse.onFailure(ErrorStatus.NUTRITION_SUMMARY_EMPTY, "식단 기록이 없습니다.");
-//        }
-//
-//        TodayNutrientsStatsDto dto = summaries.get(0);
-//        if (dto.getLackedNutrient() == null || dto.getLackedValue() == 0.0) {
-//            log.info("[Nutrition] 부족한 영양소 없음 🎉");
-//            return BaseResponse.onFailure(ErrorStatus.NO_DEFICIENT_NUTRIENT, "부족한 영양소가 없습니다.");
-//        }
-//
-//        return BaseResponse.onSuccess(SuccessStatus.NUTRITION_SUMMARY_SUCCESS, summaries);
-//    }
-@GetMapping("nutrition/summary")
-public BaseResponse<?> getTodaySummary(
+    @GetMapping("nutrition/summary")
+    public BaseResponse<?> getTodaySummary(
         @AuthenticationPrincipal CustomOAuth2User principal,
         @RequestParam(required = false)
-        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
-) {
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
     if (principal == null || principal.getUser() == null) {
         log.warn("[Nutrition] 인증 정보 없음");
         return BaseResponse.onFailure(
