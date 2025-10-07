@@ -8,6 +8,10 @@ ai:
     enabled: true
     base-url: "http://photo-label-server-svc.ai-services.svc.cluster.local"
 
+  chat: # 영양분석 후 챗봇 base 서비스 DNS
+    base-url: http://chatbot-server-svc.ai-services.svc.cluster.local
+
+
 
 # storage
 storage:

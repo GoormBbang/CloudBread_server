@@ -39,3 +39,4 @@ external:
   fastapi:
     url: http://cloudbread.133.186.213.185.nip.io
     mealplan-url: http://cloudbread.133.186.213.185.nip.io/api/food/api/v1/recommend
+
