@@ -12,7 +12,7 @@ public interface FoodNutrientRepository extends JpaRepository<FoodNutrient, Long
     Optional<FoodNutrient> findByFoodIdAndNutrientId(Long foodId, Long nutrientId);
     List<FoodNutrient> findByFoodId(Long foodId);
 
-    // 추가: 영양 분석용 커스텀 쿼리
+    // 영양 분석용
     @Query("""
         SELECT fn
         FROM FoodNutrient fn
@@ -26,6 +26,7 @@ public interface FoodNutrientRepository extends JpaRepository<FoodNutrient, Long
             @Param("nutrientNames") List<String> nutrientNames
     );
 
+    //캘린더 상세조회용
     @Query("""
     SELECT fn
     FROM FoodNutrient fn
@@ -33,6 +34,7 @@ public interface FoodNutrientRepository extends JpaRepository<FoodNutrient, Long
     WHERE fn.food.id IN :foodIds
     """)
     List<FoodNutrient> findByFoodIdsWithNutrient(@Param("foodIds") List<Long> foodIds);
+
 
 
 }

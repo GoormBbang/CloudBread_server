@@ -42,4 +42,9 @@ public class TodayNutrientsStatsDto {
                 .nutrients(List.of())
                 .build();
     }
+
+    private int totalCalories;
+    private String comment;
+    private Double lackedValue;
+    private String lackedNutrient;
 }

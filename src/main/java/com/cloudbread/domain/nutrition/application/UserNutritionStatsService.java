@@ -2,6 +2,9 @@ package com.cloudbread.domain.nutrition.application;
 
 import com.cloudbread.domain.nutrition.dto.TodayNutrientsStatsDto;
 
+import java.time.LocalDate;
+import java.util.List;
+
 public interface UserNutritionStatsService {
 
     /**
@@ -10,4 +13,6 @@ public interface UserNutritionStatsService {
      * @return 영양소 섭취 통계 DTO
      */
     TodayNutrientsStatsDto calculateTodayStats(Long userId);
+    List<TodayNutrientsStatsDto> getTodaySummary(Long userId, LocalDate date);//영양요약
+
 }
