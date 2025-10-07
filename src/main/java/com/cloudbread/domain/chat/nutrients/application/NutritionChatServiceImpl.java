@@ -14,6 +14,8 @@ import com.cloudbread.domain.food.domain.entity.FoodNutrient;
 import com.cloudbread.domain.food.domain.enums.Unit;
 import com.cloudbread.domain.food.domain.repository.FoodNutrientRepository;
 import com.cloudbread.domain.food.domain.repository.FoodRepository;
+import com.cloudbread.domain.user.domain.entity.User;
+import com.cloudbread.domain.user.domain.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +41,7 @@ import java.util.Map;
 public class NutritionChatServiceImpl implements NutritionChatService {
     private final FoodRepository foodRepository;
     private final FoodNutrientRepository foodNutrientRepository;
+    private final UserRepository userRepository;
     private final UserProfileService userProfileService;
     private final SessionStore sessionStore;
     private final WebClient aiChatClient;
@@ -80,23 +85,28 @@ public class NutritionChatServiceImpl implements NutritionChatService {
         // 세션 컨텍스트 복원
         SessionContext ctx = sessionStore.require(userId, req.getSessionId());
 
-        // system_prompt 생성 (이미지 항목 제거)
-        String systemPrompt = buildSystemPrompt(ctx);
+        // FastAPI에 보낼 context 오브젝트 구성 (system_prompt 쓰지 않음)
+        Map<String, Object> context = buildContextForAi(userId, ctx);
 
-        // FastAPI 프록시 호출
+        // 요청 DTO 세팅
         AiChatRequest aiReq = new AiChatRequest();
         aiReq.setSession_id(req.getSessionId());
         aiReq.setMessage(req.getMessage());
-        aiReq.setSystem_prompt(systemPrompt);
+        aiReq.setContext(context);
 
+        // == 로그용 코드 ==
+        final String path = "/api/chatbot/chat";
+        final String reqJson = toPrettyJson(aiReq);
+        log.info("[NC→AI] HTTP Request\nMETHOD: POST\nURL: {}\nHEADERS: accept=application/json, content-type=application/json\nBODY:\n{}", path, reqJson);
+
+        // Fast api 호출
         AiChatResponse aiRes = aiChatClient.post()
                 .uri("/api/chatbot/chat")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(aiReq) // Post요청의 requestBody
+                .bodyValue(aiReq) // FastAPI에게 보낼 requestBody
                 .retrieve()
-                .bodyToMono(AiChatResponse.class) // Response 받아서 -> AiChatResponse 에
-            //    .block(Duration.ofSeconds(30));
-                .block(); // 테스트용, 인자없이 무한대기
+                .bodyToMono(AiChatResponse.class)
+                .block(); // 테스트 중이면 무제한, 운영 시 .block(Duration.ofSeconds(30)) 권장
 
         // 매핑
         List<NutritionChatResponse.HistoryItem> history = aiRes.getMessage_history().stream()
@@ -115,36 +125,54 @@ public class NutritionChatServiceImpl implements NutritionChatService {
     }
 
 
-    private String buildSystemPrompt(SessionContext ctx) {
-        try {
-            String profileJson = om.writeValueAsString(ctx.userProfile());
-            Map<String,Object> foodJson = new LinkedHashMap<>();
-            foodJson.put("food_id", ctx.food().getFoodId());
-            foodJson.put("name", ctx.food().getName());
-            foodJson.put("serving", ctx.food().getServing());
-            foodJson.put("calories", ctx.food().getCalories());
-            foodJson.put("nutrients", ctx.food().getNutrients());
-            String foodJsonStr = om.writeValueAsString(foodJson);
+    /** BE → FastAPI context 변환 (topic 고정: FOOD_INFO) */
+    private Map<String, Object> buildContextForAi(Long userId, SessionContext sctx) {
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("topic", "FOOD_INFO"); // 영양분석 후 챗봇은 FOOD_INFO로 고정이니깐
 
-            return """
-                당신은 한국어로 답하는 영양 코치입니다.
-                아래 JSON 컨텍스트를 바탕으로 과학적 근거 기반, 간결하고 친절하게 답변하세요.
-                단위는 반드시 표기하고, 주의/대체 식재료/조리 팁을 제시하세요.
+        // user_profile
+        Map<String, Object> up = new LinkedHashMap<>();
 
-                [USER_PROFILE]
-                %s
+        up.put("user_id", userId);
+        up.put("pregnancy_week", calcPregnancyWeek(userId)); // null 허용
+        up.put("health_conditions", sctx.userProfile().healthConditions());
+        up.put("diets", sctx.userProfile().diets());
+        up.put("allergies", sctx.userProfile().allergies());
+        root.put("user_profile", up);
 
-                [FOOD]
-                %s
+        // food
+        Map<String, Object> food = new LinkedHashMap<>();
 
-                규칙:
-                - 건강/식이/알레르기와 충돌 시 먼저 경고.
-                - 불확실하면 추가 질문으로 명확화.
-                - "요약 → 구체 팁 → 대체 조리법/재료" 순서로 답변.
-                """.formatted(profileJson, foodJsonStr);
-        } catch (Exception e) {
-            throw new IllegalStateException("system_prompt build failed", e);
-        }
+        food.put("id", sctx.food().getFoodId());
+        food.put("name", sctx.food().getName());
+        food.put("serving", sctx.food().getServing());
+        food.put("calories", sctx.food().getCalories());
+        // Nutrients(Map<String, NutrientValue>) 그대로 직렬화
+        food.put("nutrients", sctx.food().getNutrients());
+        root.put("food", food);
+
+        return root;
+    }
+
+    /** due_date(출산예정일) 기준 임신 주차 계산: LMP = dueDate - 40주, GA = floor((today - LMP)/7), 0~42로 클램프
+     *  LMP : 마지막 월경 시작일 계산
+     *  임신기간 : 마지막 월경일로부터 40주
+     * */
+    private Integer calcPregnancyWeek(Long userId) {
+        return userRepository.findById(userId)
+                .map(User::getDueDate)
+                .map(dueDate -> {
+                    LocalDate today = LocalDate.now();
+                    LocalDate lmp = dueDate.minusWeeks(40); // 마지막 월경일
+                    long days = ChronoUnit.DAYS.between(lmp, today); // 현재까지의 일수
+                    int weeks = (int) Math.floor(days / 7.0); // 임신주차 게산
+
+                    // 예외처리
+                    if (weeks < 0) weeks = 0;
+                    if (weeks > 42) weeks = 42;
+                    return weeks;
+                })
+                .orElse(null);
     }
 
     // == helpers ==
@@ -179,6 +207,14 @@ public class NutritionChatServiceImpl implements NutritionChatService {
     private String normalizeKey(String s) { return (s == null) ? null : s.toLowerCase(); }
 
     private String unitSymbol(Unit u) { return (u == null) ? null : u.name().toLowerCase(); }
+
+    private String toPrettyJson(Object o) {
+        try {
+            return om.writerWithDefaultPrettyPrinter().writeValueAsString(o);
+        } catch (Exception e) {
+            return String.valueOf(o);
+        }
+    }
 
 
 }

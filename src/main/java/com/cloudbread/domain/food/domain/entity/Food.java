@@ -26,7 +26,7 @@ public class Food extends BaseEntity {
     private String imageUrl; // 음식이미지 (엑셀표에서는 제공 x)
 
     @Column(name = "source_name")
-    private String sourceName; // 출처명 (ex. 식약처)
+    private String sourceName; // ex) 100g
 
     @Column(name = "external_id")
     private String externalId; // 식품코드
