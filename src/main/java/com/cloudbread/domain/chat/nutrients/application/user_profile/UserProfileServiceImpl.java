@@ -22,7 +22,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     @Transactional(readOnly = true)
     public UserProfile getProfile(Long userId) {
-        // TODO: 실제로 user_healths, user_diets, user_allergies 조합해서 리턴
+
 
         // 알레르기 (문자열)
         List<UserAllergy> uaList = userAllergyRepository.findWithAllergyByUserId(userId);

@@ -29,14 +29,19 @@ public enum ErrorStatus implements BaseErrorCode {
     SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "SESSION_404", "세션이 존재하지 않습니다."),
     SESSION_EXPIRED(HttpStatus.UNAUTHORIZED, "SESSION_401", "세션이 만료되었습니다. 다시 발급해주세요"),
     SESSION_MISMATCH(HttpStatus.CONFLICT, "SESSION_409", "세션유저와 로그인한유저의 정보가 일치하지 않습니다"),
+    TOPIC_REQUIRED(HttpStatus.BAD_REQUEST, "TOPIC_400", "topic 필드는 필수값입니다"),
+    TOPIC_INVALID(HttpStatus.BAD_REQUEST, "TOPIC_400", "topic 필드는 FOOD_INFO, PREGNANCY_DRUG, PREGNANCY, FREE 중 하나여야 합니다."),
 
 
     //calender
     CALENDAR_GET_EMPTY(HttpStatus.NO_CONTENT, "CALENDAR_MONTH_EMPTY", "조회 가능한 식단이 없습니다."),
     CALENDAR_SUMMARY_FAIL(HttpStatus.NO_CONTENT, "CALENDAR_SUMMARY_FAIL", "상세 조회 실패."),
 
+
     // --- Nutrition ---
     NUTRITION_SUMMARY_FAIL(HttpStatus.NO_CONTENT, "N001", "영양 요약 실패.")
+
+
 
             ;
 
