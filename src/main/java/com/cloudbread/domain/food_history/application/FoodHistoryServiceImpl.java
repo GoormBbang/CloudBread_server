@@ -4,10 +4,7 @@ import com.cloudbread.domain.food.domain.entity.Food;
 import com.cloudbread.domain.food.domain.entity.FoodNutrient;
 import com.cloudbread.domain.food.domain.repository.FoodNutrientRepository;
 import com.cloudbread.domain.food.domain.repository.FoodRepository;
-import com.cloudbread.domain.food_history.dto.DayMealCountDto;
-import com.cloudbread.domain.food_history.dto.FoodHistoryCalendarDto;
-import com.cloudbread.domain.food_history.dto.FoodHistoryRequest;
-import com.cloudbread.domain.food_history.dto.FoodHistoryResponse;
+import com.cloudbread.domain.food_history.dto.*;
 import com.cloudbread.domain.nutrition.constant.RecommendedNutrientConstants;
 import com.cloudbread.domain.photo_analyses.domain.entity.PhotoAnalysis;
 import com.cloudbread.domain.photo_analyses.domain.repository.PhotoAnalysisRepository;
@@ -43,6 +40,7 @@ public class FoodHistoryServiceImpl implements FoodHistoryService {
 
     private final UserFoodHistoryRepository userFoodHistoryRepository;
     private final FoodNutrientRepository foodNutrientRepository;
+    private final UserFoodHistoryRepository historyRepository;
 
     @Override
     public FoodHistoryResponse.Created create(Long userId, FoodHistoryRequest.Create req) {
@@ -372,5 +370,40 @@ public class FoodHistoryServiceImpl implements FoodHistoryService {
         };
     }
 
+    //기록-오늘먹은음식조회
+    @Override
+    public FoodHistoryTodayResponse getTodayFoodHistory(Long userId, LocalDate date) {
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+
+        log.info("[오늘의 음식 조회] userId={}, date={}", userId, targetDate);
+
+        List<Object[]> result = historyRepository.findTodayFoods(userId, targetDate);
+
+        // 오늘 데이터 없음 → null 반환
+        if (result.isEmpty()) {
+            log.warn("오늘({}) 식단 기록 없음 (userId={})", targetDate, userId);
+            return null;
+        }
+
+        // 🍱 끼니별 그룹화
+        Map<MealType, List<FoodHistoryTodayResponse.FoodItemDto>> grouped =
+                result.stream()
+                        .collect(Collectors.groupingBy(
+                                row -> (MealType) row[0],
+                                LinkedHashMap::new,
+                                Collectors.mapping(row -> FoodHistoryTodayResponse.FoodItemDto.builder()
+                                                .foodId((Long) row[1])
+                                                .name((String) row[2])
+                                                .calories(((Number) row[3]).intValue())  // BigDecimal 방지
+                                                .imageUrl((String) row[4])
+                                                .build(),
+                                        Collectors.toList())
+                        ));
+
+        return FoodHistoryTodayResponse.builder()
+                .date(targetDate)
+                .meal_type(grouped)
+                .build();
+    }
 
 }

@@ -5,6 +5,7 @@ import com.cloudbread.domain.food_history.application.FoodHistoryService;
 import com.cloudbread.domain.food_history.dto.FoodHistoryCalendarDto;
 import com.cloudbread.domain.food_history.dto.FoodHistoryRequest;
 import com.cloudbread.domain.food_history.dto.FoodHistoryResponse;
+import com.cloudbread.domain.food_history.dto.FoodHistoryTodayResponse;
 import com.cloudbread.global.common.code.status.ErrorStatus;
 import com.cloudbread.global.common.code.status.SuccessStatus;
 import com.cloudbread.global.common.response.BaseResponse;
@@ -24,6 +25,7 @@ import java.time.LocalDate;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class FoodHistoryRestController {
+
     private final FoodHistoryService foodHistoryService;
 
     @PostMapping("/food-history")
@@ -84,5 +86,34 @@ public class FoodHistoryRestController {
                     ErrorStatus.CALENDAR_SUMMARY_FAIL, e.getMessage()
             );
         }
+    }
+
+    //오늘 먹은 음식 조회
+    @GetMapping("food-history/today")
+    public BaseResponse<FoodHistoryTodayResponse> getTodayFoodHistory(
+            @AuthenticationPrincipal CustomOAuth2User principal,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        Long userId = principal.getUserId();
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+
+        log.info("[오늘의 음식 조회 요청] userId={}, date={}", userId, targetDate);
+
+        FoodHistoryTodayResponse result = foodHistoryService.getTodayFoodHistory(userId, targetDate);
+
+        // ⚠️ 오늘 먹은 음식 없을 경우 실패 응답
+        // ⚠️ 오늘 먹은 음식 없을 경우 실패 응답
+        if (result == null || result.getMeal_type().isEmpty()) {
+            return BaseResponse.onFailure(
+                    ErrorStatus.FOOD_HISTORY_TODAY_FAIL,
+                    "오늘 먹은 음식이 없습니다.",
+                    "/api/today"
+            );
+        }
+
+        // ✅ 정상 조회 성공
+        return BaseResponse.onSuccess(SuccessStatus.FOOD_HISTORY_TODAY_SUCCESS, result);
     }
 }

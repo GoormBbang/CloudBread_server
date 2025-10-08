@@ -45,7 +45,7 @@ public class FoodHistoryResponse {
         private NutritionTotalsDto nutritionTotals; // 탄단지당
         private List<MealSummaryDto> meals; // 끼니별 정보
 
-        // ✅ 변경: 문자열 → 리스트(JSON)
+        // 변경: 문자열 → 리스트(JSON)
         private List<MealIntakeLevelDto> intakeMessages;
 
         public static CalendarDailySummaryDto createEmpty(LocalDate date) {
@@ -58,7 +58,7 @@ public class FoodHistoryResponse {
                     .build();
         }
 
-        // ✅ 새로 추가: 끼니별 섭취 수준 리스트
+        // 새로 추가: 끼니별 섭취 수준 리스트
         @Getter
         @Builder
         @NoArgsConstructor
@@ -90,7 +90,7 @@ public class FoodHistoryResponse {
         }
     }
 
-    //  🍽️ 끼니별 요약 DTO
+    //  끼니별 요약 DTO
     @Getter
     @Builder
     @NoArgsConstructor
@@ -101,7 +101,7 @@ public class FoodHistoryResponse {
         private List<FoodItemDto> foods;
     }
 
-    // 🍙 음식 단위 DTO
+    // 음식 단위 DTO
     @Getter
     @Builder
     @NoArgsConstructor
