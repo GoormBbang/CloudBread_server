@@ -53,4 +53,13 @@ public class RecommendedNutrientConstants {
         if (stages == null) return null;
         return stages.get(pregnancyStage.toUpperCase());
     }
+
+    public static Map<String, Double> getRecommendedValues(String stage) {
+        return switch (stage.toUpperCase()) {
+            case "EARLY" -> Map.of("CARBS", 325.0, "PROTEIN", 60.0, "FAT", 50.0);
+            case "MIDDLE" -> Map.of("CARBS", 375.0, "PROTEIN", 70.0, "FAT", 60.0);
+            case "LATE" -> Map.of("CARBS", 375.0, "PROTEIN", 78.0, "FAT", 70.0);
+            default -> Map.of("CARBS", 325.0, "PROTEIN", 60.0, "FAT", 50.0);
+        };
+    }
 }

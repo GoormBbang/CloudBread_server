@@ -36,5 +36,4 @@ public interface FoodNutrientRepository extends JpaRepository<FoodNutrient, Long
     List<FoodNutrient> findByFoodIdsWithNutrient(@Param("foodIds") List<Long> foodIds);
 
 
-
 }
