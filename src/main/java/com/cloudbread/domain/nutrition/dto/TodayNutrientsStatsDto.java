@@ -8,13 +8,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-// TodayNutrientsStatsDto.java
+
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class TodayNutrientsStatsDto {
-
+    //영양 분석용
     @JsonProperty("user_id")
     private Long userId;
 
@@ -42,7 +42,7 @@ public class TodayNutrientsStatsDto {
                 .nutrients(List.of())
                 .build();
     }
-
+    //오늘의 영양 요약용
     private int totalCalories;
     private String comment;
     private Double lackedValue;

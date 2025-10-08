@@ -1,5 +1,6 @@
 package com.cloudbread.domain.nutrition.application;
 
+import com.cloudbread.domain.nutrition.dto.NutritionBalanceResponse;
 import com.cloudbread.domain.nutrition.dto.TodayNutrientsStatsDto;
 
 import java.time.LocalDate;
@@ -14,5 +15,5 @@ public interface UserNutritionStatsService {
      */
     TodayNutrientsStatsDto calculateTodayStats(Long userId);
     List<TodayNutrientsStatsDto> getTodaySummary(Long userId, LocalDate date);//영양요약
-
+    NutritionBalanceResponse getNutritionBalance(Long userId, LocalDate date);//영양 밸런스
 }
