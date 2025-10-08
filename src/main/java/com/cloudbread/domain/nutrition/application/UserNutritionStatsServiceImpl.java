@@ -166,6 +166,7 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
         return (int)Math.round(actual / dri * 100.0);
     }
 
+
     @Override//오늘의 영양 요약 로직
     public List<TodayNutrientsStatsDto> getTodaySummary(Long userId, LocalDate date) {
         log.info("[Nutrition] 요약 조회 userId={}, date={}", userId, date);
@@ -506,6 +507,5 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
         if (weeks <= 27) return "MIDDLE";
         return "LATE";
     }
-
 
 }

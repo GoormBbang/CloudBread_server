@@ -42,9 +42,18 @@ public class TodayNutrientsStatsDto {
                 .nutrients(List.of())
                 .build();
     }
+
     //오늘의 영양 요약용
-    private int totalCalories;
+
+    @JsonProperty("total-calories")
+    private Integer totalCalories;
+
     private String comment;
+
+    @JsonProperty("lacked-value")
     private Double lackedValue;
+
+    @JsonProperty("lacked-nutrient")
+
     private String lackedNutrient;
 }

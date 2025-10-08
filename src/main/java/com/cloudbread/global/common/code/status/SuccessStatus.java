@@ -40,6 +40,7 @@ public enum SuccessStatus implements BaseCode {
 
     // food-history
     FOOD_HISTORY_CREATED(HttpStatus.CREATED, "FOOD_HISTORY_CREATED", "섭취 기록이 저장되었습니다"),
+    FOOD_HISTORY_TODAY_SUCCESS(HttpStatus.OK, "FOOD_HISTORY_TODAY_SUCCESS", "오늘 먹은 음식 조회 완료"),
 
 
     // chat session
