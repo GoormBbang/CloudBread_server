@@ -508,47 +508,4 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
         return "LATE";
     }
 
-
-
-    @Override
-    public List<TodayNutrientsStatsDto> getTodaySummary(LocalDate date) {
-        Long userId = getCurrentUserId();
-
-        // 🔹 예: FoodHistoryRepository 에서 유저별, 날짜별 음식 기록 조회
-        List<FoodHistory> histories = foodHistoryRepository.findByUserIdAndDate(userId, date);
-
-        double totalCalories = 0;
-        double totalProtein = 0;
-        double totalCarbs = 0;
-        double totalFat = 0;
-
-        for (FoodHistory history : histories) {
-            Food food = history.getFood();
-            totalCalories += food.getCalories();
-            totalProtein  += food.getProtein();
-            totalCarbs    += food.getCarbs();
-            totalFat      += food.getFat();
-        }
-
-        Map<String, Double> todayIntake = Map.of(
-                "PROTEINS", totalProtein,
-                "CARBS", totalCarbs,
-                "FATS", totalFat
-        );
-
-        String stage = userProfileRepository.findStageByUserId(userId); // e.g., "LATE"
-        NutrientCalculationResult result = calculateDeficiency(todayIntake, stage);
-
-        String comment = result.getDeficientNutrient() == null ? "권장 섭취량 달성" : "부족";
-
-        TodayNutrientsStatsDto dto = TodayNutrientsStatsDto.builder()
-                .totalCalories((int) totalCalories)
-                .comment(comment)
-                .lackedValue(result.getDeficientValue())
-                .lackedNutrient(result.getDeficientNutrient())
-                .build();
-
-        return List.of(dto);
-    }
-
 }

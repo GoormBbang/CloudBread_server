@@ -44,9 +44,6 @@ public class TodayNutrientsStatsDto {
     }
 
     //오늘의 영양 요약용
-    private int totalCalories;
-    private String comment;
-    private Double lackedValue;
 
     @JsonProperty("total-calories")
     private Integer totalCalories;

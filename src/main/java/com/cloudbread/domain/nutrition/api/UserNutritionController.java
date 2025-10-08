@@ -168,22 +168,5 @@ public class UserNutritionController {
     }
 
 
-
-    @GetMapping("/nutrition/summary")
-    public BaseResponse<List<TodayNutrientsStatsDto>> getTodaySummary(
-            @AuthenticationPrincipal CustomOAuth2User userDetails,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
-    ) {
-        Long userId = userDetails.getUser().getId();
-        LocalDate targetDate = (date != null) ? date : LocalDate.now();
-        log.info("[2단계] 요약 API 호출 - userId={}, date={}", userId, targetDate);
-
-        List<TodayNutrientsStatsDto> summaries = nutritionStatsService.getTodaySummary(targetDate);
-        log.info("[2단계] 요약 결과 {}건 반환", summaries.size());
-
-        return BaseResponse.onSuccess(SuccessStatus.NUTRITION_SUMMARY_SUCCESS, summaries);
-    }
-
 }
 
