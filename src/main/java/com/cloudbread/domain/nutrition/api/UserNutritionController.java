@@ -20,6 +20,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
+import java.util.List;
 
 /**
  * [1단계] 오늘의 영양소 섭취 통계 조회 API
@@ -51,6 +53,7 @@ public class UserNutritionController {
 
         return BaseResponse.onSuccess(SuccessStatus.NUTRITION_STATS_SUCCESS, result);
     }
+
 
     //오늘의 영양 요약
     @GetMapping("nutrition/summary")
@@ -164,6 +167,23 @@ public class UserNutritionController {
         return "LATE";
     }
 
+
+
+    @GetMapping("/nutrition/summary")
+    public BaseResponse<List<TodayNutrientsStatsDto>> getTodaySummary(
+            @AuthenticationPrincipal CustomOAuth2User userDetails,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        Long userId = userDetails.getUser().getId();
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+        log.info("[2단계] 요약 API 호출 - userId={}, date={}", userId, targetDate);
+
+        List<TodayNutrientsStatsDto> summaries = nutritionStatsService.getTodaySummary(targetDate);
+        log.info("[2단계] 요약 결과 {}건 반환", summaries.size());
+
+        return BaseResponse.onSuccess(SuccessStatus.NUTRITION_SUMMARY_SUCCESS, summaries);
+    }
 
 }
 
