@@ -5,6 +5,7 @@ import com.cloudbread.auth.jwt.JwtUtil;
 import com.cloudbread.auth.oauth2.CustomOAuth2UserService;
 import com.cloudbread.auth.oauth2.OAuth2LoginSuccessHandler;
 import com.cloudbread.auth.oauth2.exception.CustomOAuth2FailureHandler;
+import com.cloudbread.domain.notifiaction.application.filter.SseQueryParamAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -74,6 +75,7 @@ public class SecurityConfig {
 
                 )
                 // jwtFilter
+                .addFilterBefore(new SseQueryParamAuthFilter(jwtUtil), JwtAuthorizationFilter.class)
                 .addFilterBefore(new JwtAuthorizationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
