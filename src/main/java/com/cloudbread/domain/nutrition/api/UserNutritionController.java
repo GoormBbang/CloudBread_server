@@ -100,54 +100,12 @@ public class UserNutritionController {
     return BaseResponse.onSuccess(SuccessStatus.NUTRITION_SUMMARY_SUCCESS, responseList);
     }
 
-//    @GetMapping("nutrition/balance")//영양 밸런스 조회
-//    public BaseResponse<?> getNutritionBalance(
-//            @AuthenticationPrincipal CustomOAuth2User userDetails,
-//            @RequestParam(required = false)
-//            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-//            LocalDate date
-//    ) {
-//        Long userId = userDetails.getUser().getId();
-//        log.info("📊 [탄단지 밸런스 분석 요청] userId={}, date={}", userId, date);
-//
-//        try {
-//            NutritionBalanceResponse result = userNutritionStatsService.getNutritionBalance(userId, date);
-//
-//            // 1. 분석 결과가 비어있을 경우 (섭취 기록 없음)
-//            if (result == null || result.getBalance().isEmpty()) {
-//                log.warn("⚠️ [탄단지 밸런스 실패] 섭취 기록 없음 - userId={}, date={}", userId, date);
-//                return BaseResponse.onFailure(
-//                        ErrorStatus.CALENDAR_SUMMARY_FAIL,
-//                        "탄단지 밸런스 분석 실패 - 식단 기록 없음"
-//                );
-//            }
-//
-//            // 2. 정상 응답
-//            log.info("[탄단지 밸런스 분석 완료] carbs={}g, protein={}g, fat={}g",
-//                    result.getBalance().get("carbs").getActual(),
-//                    result.getBalance().get("protein").getActual(),
-//                    result.getBalance().get("fat").getActual()
-//            );
-//
-//            return BaseResponse.onSuccess(SuccessStatus.NUTRITION_STATS_SUCCESS, result);
-//
-//        } catch (Exception e) {
-//            // 3. 예외 발생 시, 명시적 에러코드 반환
-//            log.error("[탄단지 밸런스 분석 중 오류] userId={}, date={}, message={}",
-//                    userId, date, e.getMessage(), e);
-//
-//            return BaseResponse.onFailure(
-//                    ErrorStatus.NUTRITION_SUMMARY_FAIL,
-//                    "탄단지 밸런스 분석 중 오류 발생"
-//            );
-//        }
-//    }
-@GetMapping("nutrition/balance") // 영양 밸런스 조회
-public BaseResponse<?> getNutritionBalance(
+    @GetMapping("nutrition/balance") // 영양 밸런스 조회
+    public BaseResponse<?> getNutritionBalance(
         @AuthenticationPrincipal CustomOAuth2User userDetails,
         @RequestParam(required = false)
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
-) {
+    ) {
     Long userId = userDetails.getUser().getId();
     LocalDate targetDate = (date != null) ? date : LocalDate.now();
     log.info("[탄단지 밸런스 분석 요청] userId={}, date={}", userId, targetDate);

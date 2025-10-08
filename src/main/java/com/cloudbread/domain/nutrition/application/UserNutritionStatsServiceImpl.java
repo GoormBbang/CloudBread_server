@@ -382,11 +382,6 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
         List<UserFoodHistory> histories =
                 userFoodHistoryRepository.findByUserIdAndCreatedAtBetween(userId, start, end);
 
-        // ✅ 기록 없으면 200 OK로 “0 / 권장량 / g” 내려줌
-//        if (histories.isEmpty()) {
-//            return buildEmptyBalance(userId, targetDate);
-//        }
-
         log.info("===== [탄단지 밸런스 분석 시작] userId={} / 기간: {} ~ {} =====", userId, start, end);
 
         // ✅ 1. 오늘의 섭취 기록 조회
@@ -511,23 +506,6 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
         if (weeks <= 27) return "MIDDLE";
         return "LATE";
     }
-
-//    private NutritionBalanceResponse buildEmptyBalance(Long userId, LocalDate date) {
-//        // 사용자 임신 단계로 권장량 결정
-//        User user = userRepository.findById(userId)
-//                .orElseThrow(() -> new GeneralException(ErrorStatus.NO_SUCH_USER) {});
-//        String stage = getPregnancyStage(user);
-//        Map<String, Double> rec = RecommendedNutrientConstants.getRecommendedValues(stage);
-//
-//        // actual=0, 권장량과 단위는 유지
-//        return NutritionBalanceResponse.builder()
-//                .date(date)
-//                .carbs(BigDecimal.ZERO,   rec.get("CARBS"))
-//                .protein(BigDecimal.ZERO, rec.get("PROTEIN"))
-//                .fat(BigDecimal.ZERO,     rec.get("FAT"))
-//                .build();
-//    }
-
 
 
 }
