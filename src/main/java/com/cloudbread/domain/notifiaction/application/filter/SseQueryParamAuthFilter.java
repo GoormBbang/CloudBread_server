@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.AntPathMatcher;
@@ -19,6 +20,7 @@ import java.io.IOException;
  * 브라우저 EventSource는 Authorization 헤더를 못 받기에, JwtAuthorizationFilter 전에,
  * 구독 엔드포인트만, 쿼리파라미터로부터 token을 읽어, SecurityContext에 principal을 넣어주는 전용 필터
  */
+
 @RequiredArgsConstructor
 @Slf4j
 public class SseQueryParamAuthFilter extends OncePerRequestFilter {

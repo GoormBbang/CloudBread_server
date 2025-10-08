@@ -1,7 +1,6 @@
 package com.cloudbread.domain.notifiaction.dto;
 
 import com.cloudbread.domain.notifiaction.domain.NotificationType;
-import com.cloudbread.domain.notification.domain.NotificationType;
 import lombok.*;
 
 import java.time.Instant;

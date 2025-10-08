@@ -68,14 +68,15 @@ public class SecurityConfig {
                                 "/uploads/**",
                                 "/api/photo-analyses/*/events", // 프론트가 이벤트 구독하는 api,
                                 "/api/foods/suggest", // 음식 검색 api
-                                "/api/foods/*/detail"
+                                "/api/foods/*/detail",
+                                "/api/dev/notify"
                         )
                         .permitAll()
                         .anyRequest().authenticated() // 그외 요청은 허가된 사람만 인가
 
                 )
-                // jwtFilter
-                .addFilterBefore(new SseQueryParamAuthFilter(jwtUtil), JwtAuthorizationFilter.class)
+                // jwtFilter : SseQueryParamAuthFilter → JwtAuthorizationFilter → UsernamePasswordAuthenticationFilter
+                .addFilterBefore(new SseQueryParamAuthFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new JwtAuthorizationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

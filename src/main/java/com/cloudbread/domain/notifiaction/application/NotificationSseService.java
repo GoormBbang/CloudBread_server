@@ -36,9 +36,18 @@ public class NotificationSseService {
             // Last-Event-ID 이후 미수신 알림 replay (놓친 이벤트 다시 보내기)
             if (lastEventId != null && !lastEventId.isBlank()) {
                 long lastId = Long.parseLong(lastEventId.trim());
-                notificationRepository.findReplay(userId, lastId).forEach(n ->
-                        sseSender.send(userId, "notification", String.valueOf(n.getId()), NotificationMapper.toStreamPayload(n))
-                );
+                var list = notificationRepository.findReplay(userId, lastId);
+                log.info("[SSE][REPLAY] userId={}, fromId>( {} ), count={}", userId, lastId, list.size());
+                list.forEach(n -> {
+                    log.info("[SSE][REPLAY->SEND] userId={}, replayId={}", userId, n.getId());
+                    sseSender.send(userId, "notification", String.valueOf(n.getId()),
+                            NotificationMapper.toStreamPayload(n));
+                });
+//                notificationRepository.findReplay(userId, lastId).forEach(n ->
+//                        sseSender.send(userId, "notification", String.valueOf(n.getId()), NotificationMapper.toStreamPayload(n))
+//                );
+            } else {
+                log.info("[SSE][REPLAY] userId={}, no Last-Event-ID (fresh connection)", userId);
             }
         } catch (Exception e) {
             log.warn("[SSE] initial send failed", e);
