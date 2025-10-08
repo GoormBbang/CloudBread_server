@@ -37,7 +37,7 @@ public class FoodHistoryRestController {
     }
 
     /**
-     * 📅 월별 식단 기록 조회 (캘린더용)
+     * 월별 식단 기록 조회 (캘린더용)
      * - 각 날짜별로 사용자가 몇 끼를 기록했는지 카운트 반환
      */
     @GetMapping("/users/me/food-history/calendar")
@@ -51,21 +51,17 @@ public class FoodHistoryRestController {
 
         FoodHistoryCalendarDto result = foodHistoryService.getMonthlyCalendar(userId, year, month);
 
-        // ✅ 식단 데이터 없을 때 실패 응답
+        // 식단 데이터 없을 때 실패 응답
         if (result.getDays() == null || result.getDays().isEmpty()) {
             return BaseResponse.onFailure(ErrorStatus.CALENDAR_GET_EMPTY, result);
         }
 
-        // ✅ 데이터가 존재할 때만 성공
+        // 데이터가 존재할 때만 성공
         return BaseResponse.onSuccess(SuccessStatus.CALENDAR_GET_SUCCESS, result);
     }
 
     /**
-     * 📆 특정 날짜 상세 조회 (캘린더 일별 상세)
-     * - 끼니별 영양 정보 및 음식 목록 반환
-     */
-    /**
-     * 📆 특정 날짜 상세 조회 (캘린더 일별 상세)
+     * 특정 날짜 상세 조회 (캘린더 일별 상세)
      * - 끼니별 영양 정보 및 음식 목록 반환
      * - 날짜를 클릭했을 때 하단에 표시될 정보
      */
@@ -78,7 +74,7 @@ public class FoodHistoryRestController {
         Long userId = principal.getUserId();
         LocalDate targetDate = (date != null) ? date : LocalDate.now();
 
-        log.info("📆 [캘린더 상세 조회] userId={}, date={}", userId, targetDate);
+        log.info("[캘린더 상세 조회] userId={}, date={}", userId, targetDate);
 
         try {
             FoodHistoryResponse.CalendarDailySummaryDto result = foodHistoryService.getDailySummary(userId, targetDate);
