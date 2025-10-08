@@ -16,7 +16,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Slf4j
 public class SseSender {
     private final SseEmitterRepository repo;
-    private static final ObjectMapper om = new ObjectMapper();
+    private final ObjectMapper om;
 
     public void send(Long userId, String eventName, String idOrNull, Object payload) {
         var list = repo.list(userId); // 수신 대상 확인

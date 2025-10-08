@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -15,5 +16,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u.dueDate FROM User u WHERE u.id = :userId")
     LocalDate findDueDateByUserId(@Param("userId") Long userId);
+
+    @Query("select u from User u where u.activated = true")
+    List<User> findAllActivated();
 
 }

@@ -1,6 +1,7 @@
 package com.cloudbread.domain.notifiaction.domain;
 
 
+import com.cloudbread.domain.model.BaseEntity;
 import com.cloudbread.domain.user.domain.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -35,9 +36,25 @@ public class Notification  {
 
     private String deepLink;                  // null 허용
 
-    @Column(nullable=false)
-    private Instant createdAt;
+
+    private Instant createdAt = Instant.now();
 
     private Instant sentAt;                   // SSE 최초 전송 시각(없으면 createdAt 보여줘도 OK)
     private Instant deletedAt;                // 소프트 삭제
+
+    public static Notification create(User u, NotificationType type, String title, String body,
+                                      List<String> tags, String deepLink) {
+        Notification n = new Notification();
+        n.user = u;
+        n.type = type;
+        n.title = title;
+        n.body = body;
+        n.tags = tags;
+        n.deepLink = deepLink;
+        return n;
+    }
+    private static String toJson(List<String> tags) {
+        try { return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(tags); }
+        catch (Exception e) { return "[]"; }
+    }
 }

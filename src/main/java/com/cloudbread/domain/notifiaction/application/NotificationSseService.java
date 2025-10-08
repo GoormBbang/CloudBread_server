@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-// 알림 구독 + replay
+/**
+ * 구독 + 재연결 + replay 담당 (놓친 알람)
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
