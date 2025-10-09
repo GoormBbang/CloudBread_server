@@ -43,8 +43,8 @@ public class TodayNutrientsStatsDto {
                 .build();
     }
 
-    //오늘의 영양 요약용
 
+    //오늘의 영양 요약용
     @JsonProperty("total-calories")
     private Integer totalCalories;
 
