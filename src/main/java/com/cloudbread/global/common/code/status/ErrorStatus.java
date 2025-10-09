@@ -19,6 +19,7 @@ public enum ErrorStatus implements BaseErrorCode {
     // --- User ---
     NO_SUCH_USER(HttpStatus.BAD_REQUEST, "USER_404", "User가 존재하지 않습니다."),
     USER_ALREADY_DEACTIVATED(HttpStatus.CONFLICT, "USER_409", "이미 탈퇴한 사용자입니다."),
+    FILE_INVALID(HttpStatus.BAD_REQUEST, "FILE_400", "파일이 비어있거나, 이미지 파일을 업로드하지 않은 경우입니다. 점검해주세요."),
 
     // --- Token ---
     REFRESH_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "TOKEN_404", "리프레시 토큰을 찾을 수 없습니다."),
