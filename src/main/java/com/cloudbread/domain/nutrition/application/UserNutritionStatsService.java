@@ -15,9 +15,12 @@ public interface UserNutritionStatsService {
      */
     TodayNutrientsStatsDto calculateTodayStats(Long userId);
 
+
     List<TodayNutrientsStatsDto> getTodaySummary(Long userId, LocalDate date);//영양요약
     NutritionBalanceResponse getNutritionBalance(Long userId, LocalDate date);//영양 밸런스
 
+
+    //List<TodayNutrientsStatsDto> getTodaySummary(LocalDate date);
 
     //List<TodayNutrientsStatsDto> getTodaySummary(LocalDate date);
 
