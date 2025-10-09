@@ -167,6 +167,7 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
     }
 
 
+
     @Override//오늘의 영양 요약 로직
     public List<TodayNutrientsStatsDto> getTodaySummary(Long userId, LocalDate date) {
         log.info("[Nutrition] 요약 조회 userId={}, date={}", userId, date);

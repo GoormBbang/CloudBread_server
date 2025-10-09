@@ -168,7 +168,6 @@ public class UserNutritionController {
         return "LATE";
     }
 
-
 //    @GetMapping("/nutrition/summary")
 //    public BaseResponse<List<TodayNutrientsStatsDto>> getTodaySummary(
 //            @AuthenticationPrincipal CustomOAuth2User userDetails,
