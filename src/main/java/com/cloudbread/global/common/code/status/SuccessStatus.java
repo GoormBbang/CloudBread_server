@@ -55,7 +55,11 @@ public enum SuccessStatus implements BaseCode {
     CALENDAR_SUMMERY_SUCCESS(HttpStatus.OK, "CALENDAR_SUMMERY_SUCCESS", "상세 조회 성공."),
 
     //nutrient
-    NUTRITION_BALANCE_SUCCESS(HttpStatus.OK, "NUTRITION_BALANCE_SUCCESS", "영양 밸런스 조회 성공")
+    NUTRITION_BALANCE_SUCCESS(HttpStatus.OK, "NUTRITION_BALANCE_SUCCESS", "영양 밸런스 조회 성공"),
+
+    // notification
+    NOTIFICATION_LIST_SUCCESS(HttpStatus.OK, "NOTIFICATION_LIST_SUCCESS", "알림함 리스트 조회 성공"),
+    NOTIFICATION_DELETE_SUCCESS(HttpStatus.OK, "NOTIFICATION_DELETE_SUCCESS", "알림함 삭제 성공")
 
     ;
 
