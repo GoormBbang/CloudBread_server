@@ -121,4 +121,10 @@ public class User extends BaseEntity {
     public void deactivate() {
         this.activated = false;
     }
+
+    public void updateProfileImageUrl(String profileImageUrl){
+        this.profileImageUrl = profileImageUrl;
+    }
+
+
 }
