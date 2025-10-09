@@ -2,7 +2,10 @@ package com.cloudbread.domain.alert.application;
 
 import com.cloudbread.domain.alert.domain.entity.AlertPreference;
 import com.cloudbread.domain.alert.domain.repository.AlertPreferenceRepository;
+import com.cloudbread.domain.alert.dto.AlertPreferenceRequest;
 import com.cloudbread.domain.alert.dto.AlertPreferenceResponse;
+import com.cloudbread.global.common.code.status.ErrorStatus;
+import com.cloudbread.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,13 +20,14 @@ public class AlertPreferenceServiceImpl implements AlertPreferenceService {
 
     private final AlertPreferenceRepository alertPreferenceRepository;
 
+    //알림설정 조회
     @Override
     @Transactional // DB insert 허용
     public AlertPreferenceResponse getMyAlertPreferences(Long userId) {
-        // ✅ 기존 설정 조회
+        // 기존 설정 조회
         Optional<AlertPreference> optionalPref = alertPreferenceRepository.findByUserId(userId);
 
-        // ✅ 없으면 기본값(true, true)로 생성
+        // 없으면 기본값(true, true)로 생성
         AlertPreference preference = optionalPref.orElseGet(() -> {
             AlertPreference newPref = AlertPreference.builder()
                     .userId(userId)
@@ -34,7 +38,7 @@ public class AlertPreferenceServiceImpl implements AlertPreferenceService {
             return alertPreferenceRepository.save(newPref);
         });
 
-        // ✅ DTO로 변환 후 반환
+        // DTO로 변환 후 반환
         return AlertPreferenceResponse.builder()
                 .userId(preference.getUserId())
                 .mealRecoEnabled(preference.isMealRecoEnabled())
@@ -42,4 +46,29 @@ public class AlertPreferenceServiceImpl implements AlertPreferenceService {
                 .updatedAt(preference.getUpdatedAt())
                 .build();
     }
+
+    //알림 설정 수정
+    @Override
+    @Transactional
+    public AlertPreferenceResponse updateMyAlertPreferences(Long userId, AlertPreferenceRequest request) {
+        return alertPreferenceRepository.findByUserId(userId)
+                .map(preference -> {
+                    // 엔티티에 도메인 메서드가 있다면 그걸 사용
+                    preference.updatePreferences(
+                            request.isMealRecoEnabled(),
+                            request.isNutrientAlertEnabled()
+                    );
+                    alertPreferenceRepository.save(preference);
+
+                    return AlertPreferenceResponse.builder()
+                            .userId(preference.getUserId())
+                            .mealRecoEnabled(preference.isMealRecoEnabled())
+                            .nutrientAlertEnabled(preference.isNutrientAlertEnabled())
+                            .updatedAt(preference.getUpdatedAt())
+                            .build();
+                })
+                .orElse(null); // 못 찾으면 null -> 컨트롤러에서 onFailure로 처리
+    }
+
+
 }

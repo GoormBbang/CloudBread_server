@@ -63,6 +63,7 @@ public enum SuccessStatus implements BaseCode {
     NOTIFICATION_DELETE_SUCCESS(HttpStatus.OK, "NOTIFICATION_DELETE_SUCCESS", "알림함 삭제 성공"),
 
     //ALERT_SETTING
+    ALERT_SETTING_UPDATE_SUCCESS(HttpStatus.OK, "ALERT_SETTING_UPDATE_SUCCESS", "알림 설정이 성공적으로 수정되었습니다."),
     ALERT_SETTING_SUCCESS(HttpStatus.OK, "ALERT_SETTING_SUCCESS", "알림 설정 조회 성공")
 
     ;

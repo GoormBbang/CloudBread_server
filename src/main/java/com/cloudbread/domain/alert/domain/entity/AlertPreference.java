@@ -29,4 +29,10 @@ public class AlertPreference {
     public void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void updatePreferences(boolean mealRecoEnabled, boolean nutrientAlertEnabled) {
+        this.mealRecoEnabled = mealRecoEnabled;
+        this.nutrientAlertEnabled = nutrientAlertEnabled;
+        this.updatedAt = LocalDateTime.now();
+    }
 }
