@@ -28,4 +28,3 @@ public class ProfileImageController {
         return BaseResponse.onSuccess(SuccessStatus.PROFILE_UPDATE_SUCCESS, Map.of("profileImageUrl", url));
     }
 }
-
