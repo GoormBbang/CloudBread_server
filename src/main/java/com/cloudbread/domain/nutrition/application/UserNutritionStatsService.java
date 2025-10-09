@@ -19,4 +19,6 @@ public interface UserNutritionStatsService {
     NutritionBalanceResponse getNutritionBalance(Long userId, LocalDate date);//영양 밸런스
 
 
+    //List<TodayNutrientsStatsDto> getTodaySummary(LocalDate date);
+
 }
