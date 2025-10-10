@@ -1,14 +1,20 @@
 package com.cloudbread.domain.nutrition.application;
 
 import com.cloudbread.domain.food.domain.entity.FoodNutrient;
+import com.cloudbread.domain.food.domain.enums.NutrientType;
 import com.cloudbread.domain.food.domain.repository.FoodNutrientRepository;
 import com.cloudbread.domain.nutrition.constant.RecommendedNutrientConstants;
+import com.cloudbread.domain.nutrition.domain.entity.UserDailyNutrition;
 import com.cloudbread.domain.nutrition.dto.NutritionBalanceResponse;
 import com.cloudbread.domain.nutrition.dto.TodayNutrientsStatsDto;
 import com.cloudbread.domain.nutrition.model.NutrientCalculationResult;
 import com.cloudbread.domain.user.domain.entity.User;
 import com.cloudbread.domain.user.domain.entity.UserFoodHistory;
+import com.cloudbread.domain.user.domain.repository.UserDailyNutritionRepository;
 import com.cloudbread.domain.user.domain.repository.UserFoodHistoryRepository;
+import com.cloudbread.domain.user.domain.repository.UserDailyNutritionRepository;
+import com.cloudbread.domain.nutrition.domain.entity.UserDailyNutrition;
+import com.cloudbread.domain.food.domain.enums.NutrientType;
 
 import com.cloudbread.domain.user.domain.repository.UserRepository;
 import com.cloudbread.global.common.code.status.ErrorStatus;
@@ -30,6 +36,8 @@ import java.math.RoundingMode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+import static java.awt.SystemColor.info;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -39,6 +47,7 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
     private final UserFoodHistoryRepository userFoodHistoryRepository;
     private final FoodNutrientRepository foodNutrientRepository;
     private final UserRepository userRepository;
+    private final UserDailyNutritionRepository userDailyNutritionRepository;
 
     // ✅ 임산부 일일 권장 섭취량
     private static final double FOLIC_ACID_DRI = 600.0;  // μg
@@ -353,8 +362,6 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
         log.info("[Nutrition] 부족 영양소 계산 결과 => {}: {}g 부족",
                 lackingNutrient, String.format("%.2f", lackingValue)
         );
-
-
         log.info("--------------------------------------------");
 
         return new NutrientCalculationResult(lackingNutrient, lackingValue);
@@ -376,32 +383,53 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
 
     //영양 밸런스 조회 로직
     @Override
+    @org.springframework.transaction.annotation.Transactional // ← IMPORTANT: readOnly 해제
     public NutritionBalanceResponse getNutritionBalance(Long userId, LocalDate date) {
         LocalDate targetDate = (date != null) ? date : LocalDate.now();
+
+        // [A] 이미 저장된 밸런스가 있으면 바로 반환
+        var existing = userDailyNutritionRepository.findByUserIdAndDate(userId, targetDate);
+        if (!existing.isEmpty()) {
+            log.info("[NutritionBalance] DB 캐시 적중 userId={}, date={}", userId, targetDate);
+
+            Map<String, NutritionBalanceResponse.NutrientInfo> balance = new java.util.HashMap<>();
+            for (UserDailyNutrition row : existing) {
+                balance.put(
+                        toLowerKey(row.getNutrient()), // "carbs" | "protein" | "fat"
+                        new NutritionBalanceResponse.NutrientInfo(
+                                row.getActual(),
+                                row.getRecommended().doubleValue(),
+                                row.getUnit()
+                        )
+                );
+            }
+            return NutritionBalanceResponse.builder()
+                    .date(targetDate)
+                    .balance(balance)
+                    .build();
+        }
+
+        // [B] 기존 계산 로직 (조금 정리: 오늘 기록 없으면 null)
         LocalDateTime start = targetDate.atStartOfDay();
         LocalDateTime end = targetDate.plusDays(1).atStartOfDay();
 
-        List<UserFoodHistory> histories =
+        List<UserFoodHistory> todayFoodHistory =
                 userFoodHistoryRepository.findByUserIdAndCreatedAtBetween(userId, start, end);
 
         log.info("===== [탄단지 밸런스 분석 시작] userId={} / 기간: {} ~ {} =====", userId, start, end);
 
-        // ✅ 1. 오늘의 섭취 기록 조회
-        List<UserFoodHistory> todayFoodHistory =
-                userFoodHistoryRepository.findByUserIdAndCreatedAtBetween(userId, start, end);
-
         if (todayFoodHistory.isEmpty()) {
-            log.warn("[NutritionBalance] 섭취 기록 없음 → 빈 NutritionBalanceResponse 반환");
+            log.warn("[NutritionBalance] 섭취 기록 없음 → null 반환");
             return null; // 컨트롤러에서 실패 코드로 처리
         }
 
-        // 2. 음식 ID 추출
+        // 음식 ID 추출
         List<Long> foodIds = todayFoodHistory.stream()
                 .map(fh -> fh.getFood().getId())
                 .distinct()
                 .toList();
 
-        // 3. 음식별 영양소 (탄수화물, 단백질, 지방) 조회
+        // (탄/단/지) 조회
         List<FoodNutrient> nutrients = foodNutrientRepository.findNutrientsByFoodIdsAndNames(
                 foodIds,
                 List.of("CARBS", "CARBOHYDRATE", "탄수화물",
@@ -409,76 +437,188 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
                         "FAT", "FATS", "지방")
         );
 
-        // 추적 로그 용
-        // watch 리스트: nutrient_id 6,4,8만 추적
-        Set<Long> watch = Set.of(6L, 4L, 8L);   // (Java 9+)
-
-        nutrients.stream()
-                .filter(fn -> fn.getNutrient() != null && fn.getFood() != null)
-                .filter(fn -> watch.contains(fn.getNutrient().getId()))
-                .forEach(fn -> log.info("[CHECK] food_id={}, nutrient_id={}, nutrient_name={}, value={}",
-                        fn.getFood().getId(),
-                        fn.getNutrient().getId(),
-                        fn.getNutrient().getName(),
-                        fn.getValue()));
-        //여기까지 추적로그
         if (nutrients.isEmpty()) {
-            log.warn("[NutritionBalance] 조회된 영양소 데이터가 없습니다. foodIds={}", foodIds);
+            log.warn("[NutritionBalance] 조회된 영양소 데이터 없음 foodIds={}", foodIds);
             return null;
         }
 
-        // 4. foodId별 그룹화
         Map<Long, List<FoodNutrient>> nutrientsByFood = nutrients.stream()
                 .collect(Collectors.groupingBy(fn -> fn.getFood().getId()));
 
-        double totalCarbs = 0.0;
-        double totalProtein = 0.0;
-        double totalFat = 0.0;
+        double totalCarbs = 0.0, totalProtein = 0.0, totalFat = 0.0;
 
-        // 5. 음식별 섭취량 * 비율 계산(food_nutritent/value * intake_percent(실제 섭취량))
         for (UserFoodHistory history : todayFoodHistory) {
             Long foodId = history.getFood().getId();
             double ratio = history.getIntakePercent() / 100.0;
-            List<FoodNutrient> nutrientList = nutrientsByFood.get(foodId);
-            if (nutrientList == null) continue;
+            List<FoodNutrient> nlist = nutrientsByFood.get(foodId);
+            if (nlist == null) continue;
 
-            for (FoodNutrient fn : nutrientList) {
+            for (FoodNutrient fn : nlist) {
                 String name = fn.getNutrient().getName().toUpperCase();
-                double adjustedValue = fn.getValue().doubleValue() * ratio;
-
+                double adjusted = fn.getValue().doubleValue() * ratio;
                 switch (name) {
-                    case "CARBS", "탄수화물" -> totalCarbs += adjustedValue;
-                    case "PROTEINS", "단백질" -> totalProtein += adjustedValue;
-                    case "FATS", "지방" -> totalFat += adjustedValue;
+                    case "CARBS", "탄수화물" -> totalCarbs += adjusted;
+                    case "PROTEINS", "단백질" -> totalProtein += adjusted;
+                    case "FATS", "지방" -> totalFat += adjusted;
                 }
             }
         }
 
-        log.info("""
-            [탄단지 계산 완료]
-            - 탄수화물(CARBS): {}g
-            - 단백질(PROTEIN): {}g
-            - 지방(FAT): {}g
-            """, totalCarbs, totalProtein, totalFat);
+        log.info("[탄단지 계산 완료] CARBS={}g, PROTEIN={}g, FAT={}g", totalCarbs, totalProtein, totalFat);
 
-        // 6. 권장량 조회
-        Optional<User> userOpt = userRepository.findById(userId);
-        if (userOpt.isEmpty()) {
-            log.error("[NutritionBalance] 존재하지 않는 사용자 userId={}", userId);
-            return null; // 컨트롤러에서 ErrorStatus.NO_SUCH_USER 로 처리
-        }
-
-        User user = userOpt.get();
+        // 권장량
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("no such user: " + userId));
         String stage = getPregnancyStage(user);
         Map<String, Double> recommended = RecommendedNutrientConstants.getRecommendedValues(stage);
 
-        // 7. DTO 변환
-        return buildMacronutrientBalanceDto(targetDate, totalCarbs, totalProtein, totalFat, recommended);
+        NutritionBalanceResponse result = buildMacronutrientBalanceDto(
+                targetDate, totalCarbs, totalProtein, totalFat, recommended
+        );
+
+        // [C] 계산 결과 DB 저장 (람다 변수명 'ni'로, SystemColor.info 충돌 회피)
+        for (var e : result.getBalance().entrySet()) {
+            String key = e.getKey(); // "carbs" | "protein" | "fat"
+            var ni = e.getValue();
+
+            userDailyNutritionRepository.save(
+                    UserDailyNutrition.builder()
+                            .user(user)
+                            .date(targetDate)
+                            .nutrient(mapToEnum(key)) // "carbs"→CARBS, "protein"→PROTEINS, "fat"→FATS
+                            .actual(ni.getActual())
+                            .recommended(java.math.BigDecimal.valueOf(ni.getRecommended()))
+                            .unit(ni.getUnit())
+                            .build()
+            );
+        }
+
+        log.info("[NutritionBalance] DB 저장 완료 userId={}, date={}", userId, targetDate);
+        return result;
     }
 
-    /**
-     * 탄단지 밸런스 DTO 생성
-     */
+    /** "carbs"/"protein"/"fat" → NutrientType */
+    private NutrientType mapToEnum(String key) {
+        return switch (key.toUpperCase()) {
+            case "CARBS" -> NutrientType.CARBS;
+            case "PROTEIN" -> NutrientType.PROTEINS;
+            case "FAT" -> NutrientType.FATS;
+            default -> throw new IllegalArgumentException("Unknown nutrient key: " + key);
+        };
+    }
+
+    /** NutrientType → 응답 키 */
+    private String toLowerKey(NutrientType t) {
+        return switch (t) {
+            case CARBS -> "carbs";
+            case PROTEINS -> "protein";
+            case FATS -> "fat";
+            default -> t.name().toLowerCase();
+        };
+    }
+//    @Override
+//    public NutritionBalanceResponse getNutritionBalance(Long userId, LocalDate date) {
+//        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+//
+//        LocalDateTime start = targetDate.atStartOfDay();
+//        LocalDateTime end = targetDate.plusDays(1).atStartOfDay();
+//
+//        List<UserFoodHistory> histories =
+//                userFoodHistoryRepository.findByUserIdAndCreatedAtBetween(userId, start, end);
+//
+//        log.info("===== [탄단지 밸런스 분석 시작] userId={} / 기간: {} ~ {} =====", userId, start, end);
+//
+//        // 1. 오늘의 섭취 기록 조회
+//        List<UserFoodHistory> todayFoodHistory =
+//                userFoodHistoryRepository.findByUserIdAndCreatedAtBetween(userId, start, end);
+//
+//        if (todayFoodHistory.isEmpty()) {
+//            log.warn("[NutritionBalance] 섭취 기록 없음 → 빈 NutritionBalanceResponse 반환");
+//            return null; // 컨트롤러에서 실패 코드로 처리
+//        }
+//
+//        // 2. 음식 ID 추출
+//        List<Long> foodIds = todayFoodHistory.stream()
+//                .map(fh -> fh.getFood().getId())
+//                .distinct()
+//                .toList();
+//
+//        // 3. 음식별 영양소 (탄수화물, 단백질, 지방) 조회
+//        List<FoodNutrient> nutrients = foodNutrientRepository.findNutrientsByFoodIdsAndNames(
+//                foodIds,
+//                List.of("CARBS", "CARBOHYDRATE", "탄수화물",
+//                        "PROTEIN", "PROTEINS", "단백질",
+//                        "FAT", "FATS", "지방")
+//        );
+//
+//        // 추적 로그 용
+//        // watch 리스트: nutrient_id 6,4,8만 추적
+//        Set<Long> watch = Set.of(6L, 4L, 8L);   // (Java 9+)
+//
+//        nutrients.stream()
+//                .filter(fn -> fn.getNutrient() != null && fn.getFood() != null)
+//                .filter(fn -> watch.contains(fn.getNutrient().getId()))
+//                .forEach(fn -> log.info("[CHECK] food_id={}, nutrient_id={}, nutrient_name={}, value={}",
+//                        fn.getFood().getId(),
+//                        fn.getNutrient().getId(),
+//                        fn.getNutrient().getName(),
+//                        fn.getValue()));
+//        //여기까지 추적로그
+//        if (nutrients.isEmpty()) {
+//            log.warn("[NutritionBalance] 조회된 영양소 데이터가 없습니다. foodIds={}", foodIds);
+//            return null;
+//        }
+//
+//        // 4. foodId별 그룹화
+//        Map<Long, List<FoodNutrient>> nutrientsByFood = nutrients.stream()
+//                .collect(Collectors.groupingBy(fn -> fn.getFood().getId()));
+//
+//        double totalCarbs = 0.0;
+//        double totalProtein = 0.0;
+//        double totalFat = 0.0;
+//
+//        // 5. 음식별 섭취량 * 비율 계산(food_nutritent/value * intake_percent(실제 섭취량))
+//        for (UserFoodHistory history : todayFoodHistory) {
+//            Long foodId = history.getFood().getId();
+//            double ratio = history.getIntakePercent() / 100.0;
+//            List<FoodNutrient> nutrientList = nutrientsByFood.get(foodId);
+//            if (nutrientList == null) continue;
+//
+//            for (FoodNutrient fn : nutrientList) {
+//                String name = fn.getNutrient().getName().toUpperCase();
+//                double adjustedValue = fn.getValue().doubleValue() * ratio;
+//
+//                switch (name) {
+//                    case "CARBS", "탄수화물" -> totalCarbs += adjustedValue;
+//                    case "PROTEINS", "단백질" -> totalProtein += adjustedValue;
+//                    case "FATS", "지방" -> totalFat += adjustedValue;
+//                }
+//            }
+//        }
+//
+//        log.info("""
+//            [탄단지 계산 완료]
+//            - 탄수화물(CARBS): {}g
+//            - 단백질(PROTEIN): {}g
+//            - 지방(FAT): {}g
+//            """, totalCarbs, totalProtein, totalFat);
+//
+//        // 6. 권장량 조회
+//        Optional<User> userOpt = userRepository.findById(userId);
+//        if (userOpt.isEmpty()) {
+//            log.error("[NutritionBalance] 존재하지 않는 사용자 userId={}", userId);
+//            return null; // 컨트롤러에서 ErrorStatus.NO_SUCH_USER 로 처리
+//        }
+//
+//        User user = userOpt.get();
+//        String stage = getPregnancyStage(user);
+//        Map<String, Double> recommended = RecommendedNutrientConstants.getRecommendedValues(stage);
+//
+//        // 7. DTO 변환
+//        return buildMacronutrientBalanceDto(targetDate, totalCarbs, totalProtein, totalFat, recommended);
+//    }
+//
+    //탄단지 밸런스 DTO 생성
     private static BigDecimal round0(double v) {
         return BigDecimal.valueOf(v).setScale(0, RoundingMode.HALF_UP);
     }
@@ -496,9 +636,7 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
                 .build();
     }
 
-    /**
-     * 임신 주차에 따른 단계 계산
-     */
+    //임신 주차에 따른 단계 계산
     private String getPregnancyStage(User user) {
         LocalDate dueDate = user.getDueDate();
         LocalDate startDate = dueDate.minusWeeks(40);
@@ -507,46 +645,6 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
         if (weeks <= 13) return "EARLY";
         if (weeks <= 27) return "MIDDLE";
         return "LATE";
-
-//    @Override
-//    public List<TodayNutrientsStatsDto> getTodaySummary(LocalDate date) {
-//        Long userId = getCurrentUserId();
-//
-//        // 🔹 예: FoodHistoryRepository 에서 유저별, 날짜별 음식 기록 조회
-//        List<FoodHistory> histories = foodHistoryRepository.findByUserIdAndDate(userId, date);
-//
-//        double totalCalories = 0;
-//        double totalProtein = 0;
-//        double totalCarbs = 0;
-//        double totalFat = 0;
-//
-//        for (FoodHistory history : histories) {
-//            Food food = history.getFood();
-//            totalCalories += food.getCalories();
-//            totalProtein  += food.getProtein();
-//            totalCarbs    += food.getCarbs();
-//            totalFat      += food.getFat();
-//        }
-//
-//        Map<String, Double> todayIntake = Map.of(
-//                "PROTEINS", totalProtein,
-//                "CARBS", totalCarbs,
-//                "FATS", totalFat
-//        );
-//
-//        String stage = userProfileRepository.findStageByUserId(userId); // e.g., "LATE"
-//        NutrientCalculationResult result = calculateDeficiency(todayIntake, stage);
-//
-//        String comment = result.getDeficientNutrient() == null ? "권장 섭취량 달성" : "부족";
-//
-//        TodayNutrientsStatsDto dto = TodayNutrientsStatsDto.builder()
-//                .totalCalories((int) totalCalories)
-//                .comment(comment)
-//                .lackedValue(result.getDeficientValue())
-//                .lackedNutrient(result.getDeficientNutrient())
-//                .build();
-//
-//        return List.of(dto);
     }
 
 }
