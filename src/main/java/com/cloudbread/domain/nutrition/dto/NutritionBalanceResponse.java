@@ -1,5 +1,6 @@
 package com.cloudbread.domain.nutrition.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -16,6 +17,7 @@ import java.util.Map;
 @Builder
 public class NutritionBalanceResponse {
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate date;
     private Map<String, NutrientInfo> balance;
 
