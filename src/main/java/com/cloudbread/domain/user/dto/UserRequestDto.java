@@ -17,6 +17,7 @@ public class UserRequestDto {
     @Builder
     @AllArgsConstructor
     @Getter
+    @NoArgsConstructor
     public static class UpdateDetailsRequest {
         private LocalDate birthDate; // 생년월일
         private BigDecimal weight;
