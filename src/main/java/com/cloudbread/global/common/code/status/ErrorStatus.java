@@ -44,6 +44,8 @@ public enum ErrorStatus implements BaseErrorCode {
     NUTRITION_SUMMARY_FAIL(HttpStatus.NO_CONTENT, "NUTRITION_SUMMARY_FAIL", "영양 요약 실패."),
     NUTRITION_BALANCE_FAIL(HttpStatus.NO_CONTENT, "NUTRITION_BALANCE_FAIL", "영양 밸런스 조회 실패"),
 
+    //
+    FEEDBACK_FAIL(HttpStatus.NO_CONTENT, "FEEDBACK_FAIL", "피드백 실패"),
     //ALERT_SETTING
     ALERT_SETTING_NOT_FOUND(HttpStatus.NOT_FOUND, "ALERT_SETTING_NOT_FOUND", "알림 설정 조회 실패")
 

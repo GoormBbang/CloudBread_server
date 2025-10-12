@@ -20,4 +20,5 @@ public interface DietTypeRepository extends JpaRepository<DietType, Long> {
         }
     }
     long countByIdIn(List<Long> ids);
+
 }

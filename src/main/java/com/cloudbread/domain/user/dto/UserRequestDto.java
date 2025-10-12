@@ -95,8 +95,7 @@ public class UserRequestDto {
         }
     }
 
-
-        // ✅ 음식 히스토리 DTO
+        // 음식 히스토리 DTO
     @Getter
     @AllArgsConstructor
     @NoArgsConstructor

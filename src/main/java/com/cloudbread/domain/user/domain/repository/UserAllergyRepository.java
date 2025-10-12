@@ -24,4 +24,5 @@ public interface UserAllergyRepository extends JpaRepository<UserAllergy, Long> 
            where ua.user.id = :userId
            """)
     List<UserAllergy> findWithAllergyByUserId(Long userId);
+
 }

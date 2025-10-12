@@ -25,4 +25,5 @@ public interface UserHealthRepository extends JpaRepository<UserHealth, Long> {
            """)
     List<UserHealth> findWithHealthTypeByUserId(Long userId);
 
+
 }
