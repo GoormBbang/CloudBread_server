@@ -80,13 +80,6 @@ public class MealPlanServiceImpl implements MealPlanService {
                 .reasonDesc(null)
                 .build();
 
-        // ✅ 7. FastAPI 응답 로그
-//        log.info("[AI 응답 섹션 수] {}", aiResponse.getSections() != null ? aiResponse.getSections().size() : 0);
-//        aiResponse.getSections().forEach(section ->
-//                log.info(" - 섹션 {} : items = {}", section.getMealType(),
-//                        section.getItems() != null ? section.getItems().size() : 0)
-//        );
-
         // ✅ 8. DB 저장용 item 변환 (FastAPI 원본 그대로 DB에만 저장)
         if (aiResponse.getSections() != null) {
             for (MealPlanResponseDto.SectionDto section : aiResponse.getSections()) {

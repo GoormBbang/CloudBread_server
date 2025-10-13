@@ -74,7 +74,7 @@ public class UserRequestDto {
         private String birthDate;              // 생년월일
         //@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
         private String dueDate;                // 출산 예정일
-        private String otherHealthFactors;        // 기타 건강 특성
+        private List<String> otherHealthFactors;        // 기타 건강 특성
         private List<FoodHistoryDto> foodHistory; // 최근 음식 기록
 
         public static AiUserRequest from(User user, List<FoodHistoryDto> foodHistory) {
@@ -89,7 +89,11 @@ public class UserRequestDto {
                                     ? user.getDueDate().toString()
                                     : ""  // null 방지
                     )
-                    .otherHealthFactors(user.getOtherHealthFactors())
+                    .otherHealthFactors(
+                            user.getOtherHealthFactors() != null
+                                    ? List.of(user.getOtherHealthFactors())
+                                    : List.of()
+                    )
                     .foodHistory(foodHistory)
                     .build();
         }
