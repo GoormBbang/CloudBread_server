@@ -19,6 +19,12 @@ storage:
     base-dir: /data/uploads # BE 파드 내부에, PVC로 마운트된 /data/uploads
     public-base-url: "http://cloudbread.133.186.213.185.nip.io/uploads" # 저장후 FE,AI로 돌려줄 접근가능한 URL 접두사, ingress에서 설정 열어둠
 
+# 배포용 elasticsearch - es 잘안되면, jpa로 롤백하기
+search:
+  engine: es
+  es:
+    host: http://elasticsearch.backend.svc.cluster.local:9200
+    index: foods
 
 
 # spring

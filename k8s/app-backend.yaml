@@ -6,6 +6,9 @@ metadata:
   namespace: backend
 spec:
   replicas: 1
+  strategy:
+    type: Recreate            # ★ Recreate 전략 고정
+  revisionHistoryLimit: 1     # ★ 예전 RS 누적 방지(권장)
   selector:
     matchLabels: { app: cloudbread-backend }
   template:

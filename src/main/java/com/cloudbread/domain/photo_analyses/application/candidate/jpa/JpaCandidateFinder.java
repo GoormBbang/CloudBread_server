@@ -1,12 +1,16 @@
-package com.cloudbread.domain.photo_analyses.application.es;
+package com.cloudbread.domain.photo_analyses.application.candidate.jpa;
 
 import com.cloudbread.domain.food.domain.entity.Food;
 import com.cloudbread.domain.food.domain.entity.FoodNutrient;
 import com.cloudbread.domain.food.domain.enums.Unit;
 import com.cloudbread.domain.food.domain.repository.FoodNutrientRepository;
 import com.cloudbread.domain.food.domain.repository.FoodRepository;
+import com.cloudbread.domain.photo_analyses.application.candidate.CandidateFinder;
 import com.cloudbread.domain.photo_analyses.dto.PhotoAnalysisResponse;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -23,9 +27,16 @@ import java.util.stream.Collectors;
  */
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name="search.engine", havingValue="jpa", matchIfMissing=true)
+@Slf4j
 public class JpaCandidateFinder implements CandidateFinder {
     private final FoodRepository foodRepository;
     private final FoodNutrientRepository foodNutrientRepository;
+
+    @PostConstruct
+    void init(){
+        log.info("[CandidateFinder] JPA로 후보를 찾는다 ");
+    }
 
     @Override
     public List<PhotoAnalysisResponse.CandidateItem> find(String query, int limit) {
@@ -80,14 +91,4 @@ public class JpaCandidateFinder implements CandidateFinder {
         return u.name().toLowerCase(); // 예: G -> "g", MG -> "mg", UG -> "ug"
     }
 
-//    private Map<String, Object> toNutrientsMap(Long foodId) {
-//        List<FoodNutrient> list = foodNutrientRepository.findByFoodId(foodId);
-//
-//        Map<String, Object> map = new LinkedHashMap<>();
-//        list.forEach(fn -> {
-//            String key = fn.getNutrient().getName().toLowerCase(); // 예: "CARBS", "SODIUM" 등
-//            map.put(key, fn.getValue());
-//        });
-//        return map;
-//    }
 }

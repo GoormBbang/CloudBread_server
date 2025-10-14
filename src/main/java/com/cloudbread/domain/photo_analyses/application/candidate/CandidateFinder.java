@@ -1,4 +1,4 @@
-package com.cloudbread.domain.photo_analyses.application.es;
+package com.cloudbread.domain.photo_analyses.application.candidate;
 
 import com.cloudbread.domain.photo_analyses.dto.PhotoAnalysisResponse;
 

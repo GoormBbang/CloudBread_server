@@ -11,14 +11,19 @@ storage:
 
 ai:
   food:
-    enabled: false            # 로컬에선 AI 호출 건너뜀
-    base-url: "http://localhost:8000"  # (의미 없음, enabled=false라 호출 안 함)
+    enabled: true
+    base-url: "http://photo-label-server-svc.ai-services.svc.cluster.local"
 
 # ai 챗봇 (로컬) ingress controller 거쳐서
-
   chat:
     base-url: http://cloudbread.133.186.213.185.nip.io
 
+# 로컬 ElasticSearch - es 잘안되면, jpa로 롤백하기
+search:
+  engine: es
+  es:
+    host: http://localhost:9200
+    index: foods
 
 # application-local.yml
 swagger:
