@@ -35,6 +35,7 @@ public class PhotoAnalysisResponse {
     public static class NutrientValue {
         private java.math.BigDecimal value; // 25.0
         private String unit;                // "g" | "mg" | "μg" | "kcal"
+        private String kname;               // 한국어명 (예: "탄수화물")
     }
 
     @Builder @Getter
