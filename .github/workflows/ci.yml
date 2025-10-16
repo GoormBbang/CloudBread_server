@@ -1,4 +1,4 @@
-name: CI - Build, Push to DockerHub, Bump State, Trigger CD
+name: CI - Build, Push to DockerHub, Bump State, Render Manifests, Trigger CD
 
 on:
   push:
@@ -7,48 +7,51 @@ on:
 
 env:
   IMAGE_NAME: cloudbread-backend
+  CHART_REPO: GoormBbang/cloudbread-helm-chart
   STATE_REPO: GoormBbang/cloudbread-helm-state
   STATE_FILE: cloudbread-backend/envs/prod/values.yaml
+  RENDERED_FILE: cloudbread-backend/envs/prod/rendered.yaml
+  K8S_NAMESPACE: backend         # 템플릿 렌더링에 사용할 네임스페이스명
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) 앱 레포 체크아웃
+      # 1) 앱 레포
       - name: Checkout (app repo)
         uses: actions/checkout@v4
 
-      # 2) JDK 준비
+      # 2) JDK
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      # 3) 그레이들 빌드(JAR 생성)
+      # 3) 빌드
       - name: Gradle build (skip tests if you want)
         run: ./gradlew clean build -x test
 
-      # 4) 이미지 태그로 쓸 커밋 짧은 SHA 추출
+      # 4) 태그
       - name: Set TAG (short SHA)
         id: vars
         run: |
           SHORT_SHA=$(git rev-parse --short HEAD)
           echo "TAG=${SHORT_SHA}" >> $GITHUB_OUTPUT
 
-      # 5) 도커허브 로그인
+      # 5) Docker Hub 로그인
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 6) buildx 준비(멀티아키)
+      # 6) buildx
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 7) 도커 이미지 빌드 & 푸시(:SHA, :latest 두 개)
+      # 7) 이미지 빌드/푸시 (:SHA, :latest)
       - name: Build & Push (multi-arch)
         uses: docker/build-push-action@v6
         with:
@@ -60,36 +63,52 @@ jobs:
             docker.io/minjiki222/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.TAG }}
             docker.io/minjiki222/${{ env.IMAGE_NAME }}:latest
 
-      # 8) state 레포 체크아웃(HTTPS+PAT)
-      - name: Checkout state repo
+      # 8) 차트 레포 체크아웃 (읽기만)
+      - name: Checkout chart repo (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.CHART_REPO }}
+          path: chart
+
+      # 9) state 레포 체크아웃 (쓰기)
+      - name: Checkout state repo (read/write)
         uses: actions/checkout@v4
         with:
           repository: ${{ env.STATE_REPO }}
           path: state
-          token: ${{ secrets.STATE_REPO_PAT }}  # state 레포 쓰기 권한 PAT
+          token: ${{ secrets.STATE_REPO_PAT }}
 
-      # 9) prod values에서 repository/tag 갱신 후 커밋/푸시
-      - name: Update prod values (repository & tag)
+      # 10) values.yaml에 이미지 repo/tag 업데이트
+      - name: Update state values (repository & tag)
         working-directory: state
         env:
           TAG: ${{ steps.vars.outputs.TAG }}
         run: |
           sed -i 's|^\s*repository:.*|  repository: docker.io/minjiki222/cloudbread-backend|' "$STATE_FILE"
           sed -i 's|^\s*tag:.*|  tag: "'"${TAG}"'"|' "$STATE_FILE"
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add "$STATE_FILE"
-          git commit -m "chore(state): cloudbread-backend tag -> ${TAG}" || echo "no changes"
-          git push
 
-      # 10) NHN Pipeline 웹훅 호출(CD 시작 신호)
-      - name: Trigger NHN Pipeline Webhook
+      # 11) Helm 설치 + 템플릿 렌더링 => rendered.yaml 생성
+      - name: Install Helm and render manifests
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          # 필요 시 차트 의존성
+          if [ -f chart/cloudbread-backend/Chart.yaml ]; then
+            (cd chart && helm dependency update ./cloudbread-backend || true)
+          fi
+          helm template cloudbread-backend ./chart/cloudbread-backend \
+            -n "${{ env.K8S_NAMESPACE }}" \
+            -f state/${{ env.STATE_FILE }} \
+            > state/${{ env.RENDERED_FILE }}
+
+      # 12) state 레포 커밋/푸시 (values 변경 + rendered.yaml)
+      - name: Commit & Push state repo changes
+        working-directory: state
         env:
-          WEBHOOK_URL: ${{ secrets.NHN_PIPELINE_WEBHOOK_URL }}
-          TOKEN: ${{ secrets.NHN_PIPELINE_TOKEN }}
           TAG: ${{ steps.vars.outputs.TAG }}
         run: |
-          curl -sS -X POST "${WEBHOOK_URL}" \
-            -H "Content-Type: application/json" \
-            -H "X-Auth-Token: ${TOKEN}" \
-            -d '{"imageTag":"'"${TAG}"'","service":"cloudbread-backend","env":"prod"}'
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add "${STATE_FILE}" "${RENDERED_FILE}"
+          git commit -m "chore(state): tag -> ${TAG} & render manifests" || echo "no changes"
+          git push
+
