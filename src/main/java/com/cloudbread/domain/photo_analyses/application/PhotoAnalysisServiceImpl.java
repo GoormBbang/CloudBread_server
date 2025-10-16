@@ -48,8 +48,25 @@ public class PhotoAnalysisServiceImpl implements PhotoAnalysisService {
     private final CandidateFinder candidateFinder;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    // 영양소 key(소문자) -> 한국어명 매핑 (필요한 것들 우선 반영)
+    private static final Map<String, String> KNAME_MAP = Map.ofEntries(
+            Map.entry("carbs",          "탄수화물"),
+            Map.entry("proteins",       "단백질"),
+            Map.entry("fats",           "지방"),
+            Map.entry("sugars",         "당류"),
+            Map.entry("saturated_fat",  "포화지방"),
+            Map.entry("trans_fat",      "트랜스지방"),
+            Map.entry("cholesterol",    "콜레스테롤"),
+            Map.entry("sodium",         "나트륨"),
+            Map.entry("folic_acid",     "엽산"),
+            Map.entry("iron",           "철"),
+            Map.entry("calcium",        "칼슘"),
+            Map.entry("moisture",       "수분")
+    );
+
     @Value("${ai.food.enabled:false}")
     private boolean aiEnabled; // ai 호출 여부
+
 
     @Override
     public PhotoAnalysisResponse.UploadResponse upload(Long userId, MultipartFile file) throws Exception{
@@ -185,10 +202,12 @@ public class PhotoAnalysisServiceImpl implements PhotoAnalysisService {
             if ("calories".equals(key)) continue; // 칼로리는 제외 (별도 필드)
 
             String unit = unitSymbol(fn.getNutrient().getUnit());   // "g" | "mg" | "μg"
+            String kname = knameFor(key);                          // 한국어명
 
             map.put(key, PhotoAnalysisResponse.NutrientValue.builder()
                     .value(fn.getValue())
                     .unit(unit)
+                    .kname(kname)
                     .build());
         }
         return map;
@@ -196,4 +215,10 @@ public class PhotoAnalysisServiceImpl implements PhotoAnalysisService {
 
     private String normalizeKey(String s) { return s == null ? null : s.toLowerCase(); }
     private String unitSymbol(Unit u) { return (u == null) ? null : u.name().toLowerCase(); }
+
+
+    private String knameFor(String key) {
+        if (key == null) return null;
+        return KNAME_MAP.getOrDefault(key, key); // 매핑 없으면 원문 반환(안전장치)
+    }
 }

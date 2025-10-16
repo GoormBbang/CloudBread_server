@@ -48,7 +48,9 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         log.info(" >>>> OAuth2LoginSuccessHandler :: user, userId, email:: {} {} {}", user, userId, email);
 
         // 2. 1)의 사용자 정보를 담아, accessToken과 refreshToken 발행
-        String accessToken = jwtUtil.createAccessToken("accessToken", userId, email, 30 * 60 * 1000L);// 유효기간 30분
+        //String accessToken = jwtUtil.createAccessToken("accessToken", userId, email, 30 * 60 * 1000L);// 유효기간 30분
+        // 개발을 위해, 하루로 엑세스토큰 수명 연장
+        String accessToken = jwtUtil.createAccessToken("accessToken", userId, email, 24L * 60 * 60 * 1000);
         String refreshToken = jwtUtil.createRefreshToken("refreshToken", userId, 30 * 24 * 60 * 60 * 1000L);    // 유효기간 30일
 
         // 3. refreshToken을 DB에 저장 -- user1명당, token 1개로 제한해놓아서 업데이트 로직으로 변경
