@@ -2,6 +2,8 @@
 
 # application.yml - 공통, 기본 프로파일
 spring:
+  jackson:
+    time-zone: Asia/Seoul
   profiles:
     default: local
 
