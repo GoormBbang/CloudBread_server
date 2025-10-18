@@ -103,8 +103,6 @@ public class FoodHistoryRestController {
 
         FoodHistoryTodayResponse result = foodHistoryService.getTodayFoodHistory(userId, targetDate);
 
-        // ⚠️ 오늘 먹은 음식 없을 경우 실패 응답
-        // ⚠️ 오늘 먹은 음식 없을 경우 실패 응답
         if (result == null || result.getMeal_type().isEmpty()) {
             return BaseResponse.onFailure(
                     ErrorStatus.FOOD_HISTORY_TODAY_FAIL,
@@ -113,7 +111,7 @@ public class FoodHistoryRestController {
             );
         }
 
-        // ✅ 정상 조회 성공
+        // 정상 조회 성공
         return BaseResponse.onSuccess(SuccessStatus.FOOD_HISTORY_TODAY_SUCCESS, result);
     }
 }
