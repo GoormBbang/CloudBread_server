@@ -19,9 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -373,19 +371,26 @@ public class FoodHistoryServiceImpl implements FoodHistoryService {
     //기록-오늘먹은음식조회
     @Override
     public FoodHistoryTodayResponse getTodayFoodHistory(Long userId, LocalDate date) {
-        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+        ZoneId zone = ZoneId.of("Asia/Seoul");
+        LocalDate targetDate = (date != null) ? date : LocalDate.now(zone);
 
-        log.info("[오늘의 음식 조회] userId={}, date={}", userId, targetDate);
+        // KST 00:00~24:00을 UTC 시간으로 변환
+        ZonedDateTime startKst = targetDate.atStartOfDay(zone);
+        ZonedDateTime endKst = startKst.plusDays(1);
 
-        List<Object[]> result = historyRepository.findTodayFoods(userId, targetDate);
+        LocalDateTime startUtc = startKst.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+        LocalDateTime endUtc = endKst.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
 
-        // 오늘 데이터 없음 → null 반환
+        log.info("[오늘의 음식 조회] userId={}, KST={}, UTC범위={}~{}",
+                userId, targetDate, startUtc, endUtc);
+
+        List<Object[]> result = historyRepository.findTodayFoods(userId, startUtc, endUtc);
+
         if (result.isEmpty()) {
             log.warn("오늘({}) 식단 기록 없음 (userId={})", targetDate, userId);
             return null;
         }
 
-        // 🍱 끼니별 그룹화
         Map<MealType, List<FoodHistoryTodayResponse.FoodItemDto>> grouped =
                 result.stream()
                         .collect(Collectors.groupingBy(
@@ -394,7 +399,7 @@ public class FoodHistoryServiceImpl implements FoodHistoryService {
                                 Collectors.mapping(row -> FoodHistoryTodayResponse.FoodItemDto.builder()
                                                 .foodId((Long) row[1])
                                                 .name((String) row[2])
-                                                .calories(((Number) row[3]).intValue())  // BigDecimal 방지
+                                                .calories(((Number) row[3]).intValue())
                                                 .imageUrl((String) row[4])
                                                 .build(),
                                         Collectors.toList())

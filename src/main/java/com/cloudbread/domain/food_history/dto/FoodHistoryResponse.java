@@ -54,7 +54,7 @@ public class FoodHistoryResponse {
                     .totalCalories(0)
                     .nutritionTotals(NutritionTotalsDto.createEmpty())
                     .meals(new ArrayList<>())
-                    .intakeMessages(List.of()) // ✅ 빈 리스트 반환
+                    .intakeMessages(List.of()) // 빈 리스트 반환
                     .build();
         }
 

@@ -58,15 +58,20 @@ public interface UserFoodHistoryRepository extends JpaRepository<UserFoodHistory
     List<UserFoodHistory> findByUserIdAndDateWithFood(@Param("userId") Long userId, @Param("date") LocalDate date);
 
 
-    // ✅ 오늘 먹은 음식 조회 (API: /api/users/me/food-history/today)
+    // 오늘 먹은 음식 조회 (API: /api/users/me/food-history/today)
     @Query("""
     SELECT ufh.mealType, f.id, f.name, f.calories, f.imageUrl
     FROM UserFoodHistory ufh
     JOIN ufh.food f
     WHERE ufh.user.id = :userId
-    AND DATE(ufh.createdAt) = :date
+    AND ufh.createdAt BETWEEN :startOfDay AND :endOfDay
     ORDER BY FIELD(ufh.mealType, 'BREAKFAST', 'LUNCH', 'DINNER'), ufh.createdAt
     """)
-    List<Object[]> findTodayFoods(@Param("userId") Long userId, @Param("date") LocalDate date);
+    List<Object[]> findTodayFoods(
+            @Param("userId") Long userId,
+            @Param("startOfDay") LocalDateTime startOfDay,
+            @Param("endOfDay") LocalDateTime endOfDay
+    );
+
 }
 
