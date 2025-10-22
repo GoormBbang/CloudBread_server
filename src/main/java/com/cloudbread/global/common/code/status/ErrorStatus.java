@@ -47,7 +47,10 @@ public enum ErrorStatus implements BaseErrorCode {
     //
     FEEDBACK_FAIL(HttpStatus.NO_CONTENT, "FEEDBACK_FAIL", "피드백 실패"),
     //ALERT_SETTING
-    ALERT_SETTING_NOT_FOUND(HttpStatus.NOT_FOUND, "ALERT_SETTING_NOT_FOUND", "알림 설정 조회 실패")
+    ALERT_SETTING_NOT_FOUND(HttpStatus.NOT_FOUND, "ALERT_SETTING_NOT_FOUND", "알림 설정 조회 실패"),
+
+    // MEAL_PLAN
+    MEAL_PLAN_TODAY_NOT_FOUND(HttpStatus.NOT_FOUND, "MEAL_PLAN_TODAY_NOT_FOUND", "오늘의 식단 조회 실패"),
 
 
     ;

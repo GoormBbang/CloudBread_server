@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 public interface MealPlanRepository extends JpaRepository<MealPlan, Long> {
@@ -17,6 +18,19 @@ public interface MealPlanRepository extends JpaRepository<MealPlan, Long> {
     WHERE mp.id = :planId
 """)
     Optional<MealPlan> findByIdWithItemsAndFoods(@Param("planId") Long planId);
+
+    @Query("""
+           select distinct mp
+           from MealPlan mp
+           left join fetch mp.mealPlanItems i
+           left join fetch i.food f
+           where mp.user.id = :userId
+             and mp.planDate = :planDate
+           """)
+    Optional<MealPlan> findOneWithItemsByUserIdAndPlanDate(
+            @Param("userId") Long userId,
+            @Param("planDate") LocalDate planDate
+    );
 
 
 }
