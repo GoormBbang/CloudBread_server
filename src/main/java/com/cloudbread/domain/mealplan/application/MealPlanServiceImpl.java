@@ -13,6 +13,7 @@ import com.cloudbread.domain.user.domain.entity.User;
 import com.cloudbread.domain.user.domain.enums.MealType;
 import com.cloudbread.domain.user.domain.repository.*;
 import com.cloudbread.domain.user.dto.UserRequestDto;
+import com.cloudbread.domain.nutrition.application.UserNutritionStatsService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,15 +40,16 @@ public class MealPlanServiceImpl implements MealPlanService {
     private final MealPlanRepository mealPlanRepository;
     private final FoodRepository foodRepository;
     private final MealPlanConverter mealPlanConverter;
+    private final UserNutritionStatsService userNutritionStatsService;
 
     @Override
     public MealPlanResponseDto refreshMealPlan(Long userId) {
 
-        // ✅ 1. 유저 조회
+        // 1. 유저 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다. ID: " + userId));
 
-        // ✅ 2. 건강/알러지/식단 정보 조회
+        // 2. 건강/알러지/식단 정보 조회
         List<String> healths = userHealthRepository.findByUserId(userId)
                 .stream().map(h -> h.getHealthType().getName().name()).collect(Collectors.toList());
 
@@ -56,31 +59,31 @@ public class MealPlanServiceImpl implements MealPlanService {
         List<String> diets = userDietRepository.findByUserId(userId)
                 .stream().map(d -> d.getDietType().getName().name()).collect(Collectors.toList());
 
-        // ✅ 3. 최근 음식 기록 조회
+        // 3. 최근 음식 기록 조회
         List<UserRequestDto.FoodHistoryDto> foodHistory = userFoodHistoryRepository
-                .findRecentByUserId(userId, LocalDate.now().minusDays(1).atStartOfDay())
+                .findRecentByUserId(userId, LocalDate.now(ZoneId.of("Asia/Seoul")).minusDays(1).atStartOfDay())
                 .stream().map(UserRequestDto.FoodHistoryDto::fromEntity).collect(Collectors.toList());
 
-        // ✅ 4. FastAPI 요청 생성 및 호출
+        // 4. FastAPI 요청 생성 및 호출
         UserRequestDto.AiUserRequest aiUserRequest = UserRequestDto.AiUserRequest.from(user, foodHistory);
         MealPlanRequestDto requestDto = MealPlanRequestDto.of(aiUserRequest, healths, allergies, diets);
 
         MealPlanResponseDto aiResponse = fastApiMealPlanClient.requestMealPlan(requestDto);
 
-        // ✅ 5. 날짜 처리
+        // 5. 날짜 처리 (KST 기준)
         String planDateStr = aiResponse.getPlanDate();
         LocalDate planDate = (planDateStr != null && !planDateStr.isBlank())
                 ? LocalDate.parse(planDateStr)
-                : LocalDate.now();
+                : LocalDate.now(ZoneId.of("Asia/Seoul")); // 한국 시간 기준으로 수정
 
-        // ✅ 6. MealPlan 엔티티 생성
+        // 6. MealPlan 엔티티 생성
         MealPlan mealPlan = MealPlan.builder()
                 .user(user)
                 .planDate(planDate)
                 .reasonDesc(null)
                 .build();
 
-        // ✅ 8. DB 저장용 item 변환 (FastAPI 원본 그대로 DB에만 저장)
+        // 7. DB 저장용 item 변환 (FastAPI 원본 그대로 DB에만 저장)
         if (aiResponse.getSections() != null) {
             for (MealPlanResponseDto.SectionDto section : aiResponse.getSections()) {
                 for (MealPlanResponseDto.FoodItemDto itemDto : section.getItems()) {
@@ -101,10 +104,13 @@ public class MealPlanServiceImpl implements MealPlanService {
             }
         }
 
-        // ✅ 9. CascadeType.ALL 덕분에 item 자동 저장
+        // 8. CascadeType.ALL 덕분에 item 자동 저장
         mealPlanRepository.save(mealPlan);
 
-        // ✅ 10. FastAPI 원본 그대로 리턴
+        // 9. 영양 밸런스 즉시 계산 후 DB 반영 (KST 기준)
+        userNutritionStatsService.getNutritionBalance(userId, planDate);
+
+        // 10. FastAPI 원본 그대로 리턴
         return aiResponse;
     }
 

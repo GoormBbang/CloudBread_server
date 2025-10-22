@@ -1,68 +1,3 @@
-//package com.cloudbread.domain.feedback.application;
-//
-//import com.cloudbread.domain.feedback.client.FastApiFeedbackClient;
-//import com.cloudbread.domain.feedback.dto.FeedbackRequestDto;
-//import com.cloudbread.domain.feedback.dto.UserFeedbackRequestDto;
-//import com.cloudbread.domain.nutrition.domain.entity.UserDailyNutrition;
-//import com.cloudbread.domain.user.domain.repository.UserDailyNutritionRepository;
-//import com.fasterxml.jackson.databind.ObjectMapper;
-//import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-//import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-//import com.fasterxml.jackson.databind.SerializationFeature;
-//import lombok.RequiredArgsConstructor;
-//import lombok.extern.slf4j.Slf4j;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.stereotype.Service;
-//import org.springframework.transaction.annotation.Transactional;
-//
-//import java.time.LocalDate;
-//import java.util.List;
-//
-//@Slf4j
-//@Service
-//@RequiredArgsConstructor
-//@Transactional(readOnly = true)
-//public class FeedbackServiceImpl implements FeedbackService {
-//
-//    private final UserContextBuilder userContextBuilder;
-//    private final UserDailyNutritionRepository userDailyNutritionRepository;
-//    private final FastApiFeedbackClient fastApiFeedbackClient;
-//
-//    @Override
-//    public String generateFeedback(Long userId) {
-//        log.info("🚀 [Feedback] FastAPI 피드백 요청 시작 userId={}", userId);
-//
-//        UserFeedbackRequestDto.AiUserRequest userContext =
-//                userContextBuilder.buildFeedbackUserRequest(userId);
-//
-//        List<UserDailyNutrition> todayBalanceList =
-//                userDailyNutritionRepository.findByUserIdAndDate(userId, LocalDate.now());
-//
-//        if (todayBalanceList.isEmpty()) {
-//            throw new IllegalStateException("오늘의 영양 밸런스 데이터가 없습니다. userId=" + userId);
-//        }
-//
-//        FeedbackRequestDto requestDto = FeedbackRequestDto.of(userContext, todayBalanceList);
-//
-//        try {
-//            ObjectMapper mapper = new ObjectMapper();
-//            mapper.registerModule(new JavaTimeModule());
-//            mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-//            mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-//            String requestJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(requestDto);
-//            log.info("📦 [FastAPI 요청 JSON 바디]\n{}", requestJson);
-//        } catch (Exception e) {
-//            log.warn("⚠️ [요청 직렬화 실패]: {}", e.getMessage());
-//        }
-//
-//        // ✅ FastAPI 호출 후 원본 응답(String) 반환
-//        ResponseEntity<String> response = fastApiFeedbackClient.requestRawFeedback(requestDto);
-//        log.info("📬 [FastAPI 원본 응답]: {}", response.getBody());
-//        return response.getBody(); // 그대로 리턴
-//    }
-//
-//
-//}
 package com.cloudbread.domain.feedback.application;
 
 import com.cloudbread.domain.feedback.client.FastApiFeedbackClient;
@@ -71,6 +6,7 @@ import com.cloudbread.domain.feedback.domain.repository.FeedbackRepository;
 import com.cloudbread.domain.feedback.dto.FeedbackResponseDto;
 import com.cloudbread.domain.feedback.dto.FeedbackRequestDto;
 import com.cloudbread.domain.feedback.dto.UserFeedbackRequestDto;
+import com.cloudbread.domain.nutrition.application.UserNutritionStatsService;
 import com.cloudbread.domain.nutrition.domain.entity.UserDailyNutrition;
 import com.cloudbread.domain.user.domain.entity.User;
 import com.cloudbread.domain.user.domain.repository.UserDailyNutritionRepository;
@@ -99,27 +35,50 @@ public class FeedbackServiceImpl implements FeedbackService {
     private final FastApiFeedbackClient fastApiFeedbackClient;
     private final FeedbackRepository feedbackRepository;
     private final UserRepository userRepository;
+    private final UserNutritionStatsService userNutritionStatsService;
 
     @Override
+    @Transactional
     public String generateFeedback(Long userId) {
-        log.info("🚀 [Feedback] FastAPI 피드백 요청 시작 userId={}", userId);
+        log.info("[Feedback] FastAPI 피드백 요청 시작 userId={}", userId);
 
+        // 1. 사용자 컨텍스트 구성 (FastAPI 전송용)
         UserFeedbackRequestDto.AiUserRequest userContext =
                 userContextBuilder.buildFeedbackUserRequest(userId);
 
+        // 2. 오늘의 영양 밸런스 조회
+        LocalDate today = LocalDate.now();
         List<UserDailyNutrition> todayBalanceList =
-                userDailyNutritionRepository.findByUserIdAndDate(userId, LocalDate.now());
+                userDailyNutritionRepository.findByUserIdAndDate(userId, today);
 
+        // 3. 밸런스가 없으면 자동 계산 시도
         if (todayBalanceList.isEmpty()) {
-            throw new IllegalStateException("오늘의 영양 밸런스 데이터가 없습니다. userId=" + userId);
+            log.warn("오늘의 영양 밸런스 데이터가 없습니다. 자동 계산을 시도합니다. userId={}", userId);
+            try {
+                // 영양 밸런스 자동 계산 및 저장
+                userNutritionStatsService.getNutritionBalance(userId, today);
+
+                // 다시 조회
+                todayBalanceList = userDailyNutritionRepository.findByUserIdAndDate(userId, today);
+
+                if (todayBalanceList.isEmpty()) {
+                    throw new IllegalStateException("오늘의 영양 밸런스 계산에 실패했습니다. userId=" + userId);
+                }
+
+            } catch (Exception e) {
+                log.error("[자동 밸런스 계산 실패] userId={}, error={}", userId, e.getMessage(), e);
+                throw new IllegalStateException("오늘의 영양 밸런스 데이터가 없습니다. userId=" + userId);
+            }
         }
 
+        // 4. FastAPI 요청 DTO 생성
         FeedbackRequestDto requestDto = FeedbackRequestDto.of(userContext, todayBalanceList);
 
-        // FastAPI 호출
+        // 5. FastAPI 호출
         ResponseEntity<String> response = fastApiFeedbackClient.requestRawFeedback(requestDto);
-        log.info("📬 [FastAPI 원본 응답]: {}", response.getBody());
+        log.info("[FastAPI 원본 응답]: {}", response.getBody());
 
+        // 6. 응답 처리 및 DB 저장
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
@@ -143,11 +102,11 @@ public class FeedbackServiceImpl implements FeedbackService {
                         .build();
 
                 feedbackRepository.save(feedback);
-                log.info("💾 [피드백 저장 완료] id={}, userId={}, createdAt={}",
+                log.info("[피드백 저장 완료] id={}, userId={}, createdAt={}",
                         feedback.getId(), userId, feedback.getCreatedAt());
             }
         } catch (Exception e) {
-            log.error("[FastAPI 응답 처리 실패]: {}", e.getMessage());
+            log.error("[FastAPI 응답 처리 실패]: {}", e.getMessage(), e);
         }
 
         return response.getBody();
