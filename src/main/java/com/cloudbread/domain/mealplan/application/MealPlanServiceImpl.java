@@ -75,6 +75,7 @@ public class MealPlanServiceImpl implements MealPlanService {
         LocalDate planDate = (planDateStr != null && !planDateStr.isBlank())
                 ? LocalDate.parse(planDateStr)
                 : LocalDate.now(ZoneId.of("Asia/Seoul")); // 한국 시간 기준으로 수정
+        log.info("ai 추천 식단, planDate={}", planDate);
 
         // 6. MealPlan 엔티티 생성
         MealPlan mealPlan = MealPlan.builder()
@@ -129,7 +130,7 @@ public class MealPlanServiceImpl implements MealPlanService {
     @Transactional(readOnly = true)
     public MealPlanResponseDto getTodayMealPlan(Long userId) {
         LocalDate todayKst = LocalDate.now(ZoneId.of("Asia/Seoul"));
-        log.info("todayKst={}", LocalDate.now(ZoneId.of("Asia/Seoul")));
+        log.info("todayKst={}", todayKst);
 
         MealPlan mealPlan = mealPlanRepository
                 .findOneWithItemsByUserIdAndPlanDate(userId, todayKst)
