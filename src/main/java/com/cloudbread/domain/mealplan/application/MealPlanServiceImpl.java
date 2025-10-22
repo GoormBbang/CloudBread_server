@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -120,5 +120,60 @@ public class MealPlanServiceImpl implements MealPlanService {
         } catch (Exception e) {
             return MealType.ETC;
         }
+    }
+
+    /**
+     * 오늘(KST) 식단 조회
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public MealPlanResponseDto getTodayMealPlan(Long userId) {
+        LocalDate todayKst = LocalDate.now(ZoneId.of("Asia/Seoul"));
+
+        MealPlan mealPlan = mealPlanRepository
+                .findOneWithItemsByUserIdAndPlanDate(userId, todayKst)
+                .orElseThrow(() -> new NoSuchElementException("오늘 날짜의 식단이 없습니다."));
+
+        return toResponseDto(mealPlan);
+    }
+
+    /**
+     * 엔티티 → 응답 DTO 즉시 변환 (섹션 그룹화 + kcal 합산)
+     */
+    private MealPlanResponseDto toResponseDto(MealPlan mealPlan) {
+        Map<MealType, List<MealPlanItem>> byType = mealPlan.getMealPlanItems().stream()
+                .collect(Collectors.groupingBy(MealPlanItem::getMealType, LinkedHashMap::new, Collectors.toList()));
+
+        List<MealPlanResponseDto.SectionDto> sections = new ArrayList<>();
+
+        for (Map.Entry<MealType, List<MealPlanItem>> entry : byType.entrySet()) {
+            List<MealPlanItem> items = entry.getValue();
+
+            int totalKcal = items.stream()
+                    .mapToInt(MealPlanItem::getEstCalories)
+                    .sum();
+
+            List<MealPlanResponseDto.FoodItemDto> itemDtos = items.stream()
+                    .map(i -> new MealPlanResponseDto.FoodItemDto(
+                            i.getFood() != null ? i.getFood().getId() : null,
+                            i.getFoodName(),
+                            i.getPortionLabel(),
+                            i.getEstCalories(),
+                            i.getFoodCategory()
+                    ))
+                    .collect(Collectors.toList());
+
+            sections.add(new MealPlanResponseDto.SectionDto(
+                    (entry.getKey() != null ? entry.getKey() : MealType.ETC).name(),
+                    totalKcal,
+                    itemDtos
+            ));
+        }
+
+        MealPlanResponseDto dto = new MealPlanResponseDto();
+        dto.setPlanId(mealPlan.getId());
+        dto.setPlanDate(mealPlan.getPlanDate() != null ? mealPlan.getPlanDate().toString() : null);
+        dto.setSections(sections);
+        return dto;
     }
 }
