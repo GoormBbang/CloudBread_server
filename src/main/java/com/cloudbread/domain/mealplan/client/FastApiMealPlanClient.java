@@ -32,7 +32,7 @@ public class FastApiMealPlanClient {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<MealPlanRequestDto> entity = new HttpEntity<>(requestDto, headers);
 
-            // ✅ FastAPI POST 요청
+            // FastAPI POST 요청
             ResponseEntity<String> response = restTemplate.exchange(
                     endpoint,
                     HttpMethod.POST,
@@ -40,7 +40,7 @@ public class FastApiMealPlanClient {
                     String.class
             );
 
-            // ✅ 원본 응답 JSON 로그
+            // 원본 응답 JSON 로그
             String body = response.getBody();
             log.info("[FastAPI RAW BODY] {}", body); // ← 여기에 첫 번째 로그
 
@@ -54,15 +54,11 @@ public class FastApiMealPlanClient {
                 throw new RuntimeException("FastAPI 응답에 result 필드가 없습니다.");
             }
 
-            // ✅ resultNode → DTO 변환
+            // resultNode → DTO 변환
             MealPlanResponseDto dto = mapper.treeToValue(resultNode, MealPlanResponseDto.class);
 
-            // ✅ 파싱된 DTO 로그
+            // 파싱된 DTO 로그
             log.info("[파싱 완료 DTO] {}", mapper.writeValueAsString(dto)); // ← 여기에 두 번째 로그
-
-//            log.info("[FastAPI 응답 변환 완료] planId={}, sections={}",
-//                    dto.getPlanId(),
-//                    dto.getSections() != null ? dto.getSections().size() : 0);
 
             return dto;
 

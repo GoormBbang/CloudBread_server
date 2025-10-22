@@ -28,7 +28,7 @@ public class MealPlanResponseDto {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class SectionDto {  // ✅ static 필수
+    public static class SectionDto {
         @JsonProperty("mealType")
         private String mealType;
 
@@ -43,7 +43,7 @@ public class MealPlanResponseDto {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class FoodItemDto { // ✅ static 필수
+    public static class FoodItemDto {
         @JsonProperty("foodId")
         private Long foodId;
 

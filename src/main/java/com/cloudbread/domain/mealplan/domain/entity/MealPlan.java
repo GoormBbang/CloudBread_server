@@ -27,12 +27,10 @@ public class MealPlan {
     @JoinColumn(name = "user_id")
     private User user;
 
-    // ✅ Cascade + orphanRemoval + Builder.Default 필수
     @OneToMany(mappedBy = "mealPlan", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<MealPlanItem> mealPlanItems = new ArrayList<>();
 
-    // ✅ 양방향 편의 메서드
     public void addMealPlanItem(MealPlanItem item) {
         mealPlanItems.add(item);
         item.setMealPlan(this);
