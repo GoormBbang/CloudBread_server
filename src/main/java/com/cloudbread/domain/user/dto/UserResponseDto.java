@@ -120,4 +120,12 @@ public class UserResponseDto {
         private String description;
     }
 
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ProfileResponse {
+        private String nickname;
+        private LocalDate birthDate;
+    }
 }
