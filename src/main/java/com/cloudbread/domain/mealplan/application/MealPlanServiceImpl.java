@@ -114,7 +114,8 @@ public class MealPlanServiceImpl implements MealPlanService {
         // 9. 영양 밸런스 즉시 계산 후 DB 반영 (KST 기준)
         userNutritionStatsService.getNutritionBalance(userId, planDate);
 
-        // 10. FastAPI 원본 그대로 리턴
+        // 10. FastAPI 원본 그대로 리턴 (시간대만 올바르게 바꿔서 리턴)
+        aiResponse.setPlanDate(planDate.toString());
         return aiResponse;
     }
 
