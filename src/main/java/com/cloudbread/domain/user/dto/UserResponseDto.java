@@ -1,5 +1,6 @@
 package com.cloudbread.domain.user.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -126,6 +127,7 @@ public class UserResponseDto {
     @NoArgsConstructor
     public static class ProfileResponse {
         private String nickname;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
         private LocalDate birthDate;
     }
 }
