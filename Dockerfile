@@ -9,6 +9,8 @@ COPY build/libs/*.jar app.jar
 
 # JAVA_OPTS라는 환경변수를 빈 문자열로 설정
 ENV JAVA_OPTS=""
+ENV TZ=Asia/Seoul
+
 
 # 컨테이너가 8080을 사용할 것이라 외부에 알린다 (실제 외부접근 허용하려면, docker run 시 포트 매핑 필요)
 EXPOSE 8080
