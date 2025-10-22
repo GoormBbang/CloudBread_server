@@ -129,6 +129,7 @@ public class MealPlanServiceImpl implements MealPlanService {
     @Transactional(readOnly = true)
     public MealPlanResponseDto getTodayMealPlan(Long userId) {
         LocalDate todayKst = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        log.info("todayKst={}", LocalDate.now(ZoneId.of("Asia/Seoul")));
 
         MealPlan mealPlan = mealPlanRepository
                 .findOneWithItemsByUserIdAndPlanDate(userId, todayKst)
