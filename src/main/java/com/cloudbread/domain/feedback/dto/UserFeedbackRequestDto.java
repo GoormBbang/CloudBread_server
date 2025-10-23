@@ -18,7 +18,7 @@ public class UserFeedbackRequestDto {
     public static class AiUserRequest {
         private String birthDate;              // 생년월일
         private String dueDate;                // 출산 예정일
-        private List<String> otherHealthFactors; // ✅ FastAPI는 리스트 기대
+        private List<String> otherHealthFactors; // FastAPI는 리스트 기대
         private List<FoodHistoryDto> foodHistory; // 최근 음식 기록
 
         private List<String> healths;   // 건강 상태
