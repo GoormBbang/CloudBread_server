@@ -32,5 +32,24 @@ public interface MealPlanRepository extends JpaRepository<MealPlan, Long> {
             @Param("planDate") LocalDate planDate
     );
 
+    @Query("""
+    select distinct mp
+    from MealPlan mp
+    left join fetch mp.mealPlanItems i
+    left join fetch i.food f
+    where mp.user.id = :userId
+      and mp.planDate = :planDate
+      and mp.id = (
+        select max(m2.id)
+        from MealPlan m2
+        where m2.user.id = :userId
+          and m2.planDate = :planDate
+      )
+""")
+    Optional<MealPlan> findLatestWithItemsByUserIdAndPlanDate(
+            @Param("userId") Long userId,
+            @Param("planDate") LocalDate planDate
+    );
+
 
 }

@@ -137,7 +137,7 @@ public class MealPlanServiceImpl implements MealPlanService {
         log.info("todayKst={}", todayKst);
 
         MealPlan mealPlan = mealPlanRepository
-                .findOneWithItemsByUserIdAndPlanDate(userId, todayKst)
+                .findLatestWithItemsByUserIdAndPlanDate(userId, todayKst)
                 .orElseThrow(() -> new NoSuchElementException("오늘 날짜의 식단이 없습니다."));
 
         return toResponseDto(mealPlan);
