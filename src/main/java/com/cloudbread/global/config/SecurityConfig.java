@@ -69,7 +69,8 @@ public class SecurityConfig {
                                 "/api/photo-analyses/*/events", // 프론트가 이벤트 구독하는 api,
                                 "/api/foods/suggest", // 음식 검색 api
                                 "/api/foods/*/detail",
-                                "/api/dev/notify"
+                                "/api/dev/notify",
+                                "/api/dev/mint-token" // mini-token api
                         )
                         .permitAll()
                         .anyRequest().authenticated() // 그외 요청은 허가된 사람만 인가

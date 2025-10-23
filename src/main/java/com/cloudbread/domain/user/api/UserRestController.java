@@ -84,7 +84,7 @@ public class UserRestController {
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/users/me")
+    @GetMapping("/users/me")//내 정보 조회
     public BaseResponse<UserResponseDto.MyInfoResponse> getInfo2(//내 정보 조회
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User
     ) {
@@ -124,8 +124,6 @@ public class UserRestController {
 
         return BaseResponse.onSuccess(SuccessStatus.USER_INFO_UPDATE_SUCCESS, result);
     }
-
-
 
     // 로그아웃
     @PostMapping("/users/logout")

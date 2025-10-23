@@ -21,5 +21,4 @@ public class CloudBreadApplication {
     public void changeTimeKST() {
         TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
     }
-
 }

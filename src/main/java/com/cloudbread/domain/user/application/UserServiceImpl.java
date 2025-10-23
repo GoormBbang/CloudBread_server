@@ -248,6 +248,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserResponseDto.ProfileResponse getUserProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다. userId=" + userId));
+
+        return UserResponseDto.ProfileResponse.builder()
+                .nickname(user.getNickname())
+                .birthDate(user.getBirthDate())
+                .build();
+    }
+
+    @Override
     public void logout(Long userId) {
         Token token = tokenRepository.findByUserId(userId)
                 .orElseThrow(() -> new RefreshTokenNotFoundException());

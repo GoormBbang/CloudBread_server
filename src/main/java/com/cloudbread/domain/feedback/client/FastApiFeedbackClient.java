@@ -24,12 +24,12 @@ public class FastApiFeedbackClient {
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             HttpEntity<FeedbackRequestDto> entity = new HttpEntity<>(request, headers);
-            log.info("📤 [FastAPI 요청 전송] {}", feedbackUrl);
+            log.info("[FastAPI 요청 전송] {}", feedbackUrl);
 
             return restTemplate.exchange(feedbackUrl, HttpMethod.POST, entity, String.class);
 
         } catch (Exception e) {
-            log.error("❌ [FastAPI 호출 실패]: {}", e.getMessage(), e);
+            log.error("[FastAPI 호출 실패]: {}", e.getMessage(), e);
             throw new RuntimeException("FastAPI 피드백 요청 실패", e);
         }
     }
