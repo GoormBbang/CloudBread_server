@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 @Entity
 @Table(name = "notifications")
@@ -37,9 +39,10 @@ public class Notification  {
     private String deepLink;                  // null 허용
 
 
-    private Instant createdAt = Instant.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    private Instant sentAt;                   // SSE 최초 전송 시각(없으면 createdAt 보여줘도 OK)
+    @Column(name = "sent_at")
+    private LocalDateTime sentAt;
     private Instant deletedAt;                // 소프트 삭제
 
     public static Notification create(User u, NotificationType type, String title, String body,

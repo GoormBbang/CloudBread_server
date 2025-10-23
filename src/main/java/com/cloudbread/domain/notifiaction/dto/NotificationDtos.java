@@ -4,6 +4,7 @@ import com.cloudbread.domain.notifiaction.domain.NotificationType;
 import lombok.*;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 // ListItem, DeleteAllRes, StreamPayload
@@ -16,7 +17,7 @@ public class NotificationDtos {
         private String body;
         private List<String> tags;
         private String deepLink;
-        private Instant createdAt;  // 목록에서 상대시간 계산용
+        private LocalDateTime createdAt;  // 목록에서 상대시간 계산용
     }
 
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
@@ -33,6 +34,6 @@ public class NotificationDtos {
         private String body;
         private List<String> tags;
         private String deepLink;
-        private Instant sentAt; // 없으면 createdAt으로 채워 전송
+        private LocalDateTime sentAt; // 없으면 createdAt으로 채워 전송
     }
 }
