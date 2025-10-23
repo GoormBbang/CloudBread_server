@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
@@ -34,4 +35,16 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
         and DATE(n.createdAt) = :date
     """)
     boolean existsByUserIdAndTypeOnDate(Long userId, NotificationType type, LocalDate date);
+
+    @Query("""
+        select n from Notification n
+        where n.user.id = :userId
+          and n.type = :type
+          and n.createdAt >= :start
+          and n.createdAt <  :end
+        """)
+    List<Notification> findByUserAndTypeInRange(
+            Long userId, NotificationType type,
+            LocalDateTime start, LocalDateTime end
+    );
 }

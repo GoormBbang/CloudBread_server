@@ -31,19 +31,24 @@ public class InternalNotificationGenerateController {
 
 
     /** 10:30/14:30/20:30 끼니 누락 */
-//    @PostMapping("/meal-missed")
-//    public void generateMealMissed(@RequestBody MissedReq req, @AuthenticationPrincipal CustomOAuth2User principal) {
-//        notificationTriggerService.generateMealMissedFake(principal.getUserId(), req.date, req.meal, req.sendNow);
-//    }
+    @PostMapping("/meal-missed")
+    public void generateMealMissedDaily(@RequestBody DailyReq req,
+                                        @AuthenticationPrincipal CustomOAuth2User principal) {
+        notificationTriggerService.generateMealMissedForDay(
+                principal.getUserId(),
+                req.date,           // null이면 오늘
+                req.sendNow
+        );
+    }
 
     @lombok.Data static class DailyReq {
         public java.time.LocalDate date;     // null이면 오늘
         public boolean sendNow = true;
     }
-    @lombok.Data static class MissedReq {
-        public java.time.LocalDate date;
-        public com.cloudbread.domain.user.domain.enums.MealType meal; // BREAKFAST/LUNCH/DINNER
-        public boolean sendNow = true;
-    }
+//    @lombok.Data static class MissedReq {
+//        public java.time.LocalDate date;
+//        public com.cloudbread.domain.user.domain.enums.MealType meal; // BREAKFAST/LUNCH/DINNER
+//        public boolean sendNow = true;
+//    }
 }
 

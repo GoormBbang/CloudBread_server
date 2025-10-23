@@ -3,6 +3,7 @@ package com.cloudbread.domain.user.domain.repository;
 import com.cloudbread.domain.food_history.dto.DayMealRecord;
 import com.cloudbread.domain.notifiaction.application.dto.NutrientTotal;
 import com.cloudbread.domain.user.domain.entity.UserFoodHistory;
+import com.cloudbread.domain.user.domain.enums.MealType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -101,6 +102,27 @@ public interface UserFoodHistoryRepository extends JpaRepository<UserFoodHistory
             @Param("userId") Long userId,
             @Param("start")  LocalDateTime startInclusive,
             @Param("end")    LocalDateTime endExclusive
+    );
+
+//    // 해당 날짜(하루) 범위에 특정 끼니 기록 존재 여부
+//    boolean existsByUser_IdAndMealTypeAndCreatedAtBetween(
+//            Long userId,
+//            MealType mealType,
+//            LocalDateTime startInclusive,
+//            LocalDateTime endExclusive
+//    );
+
+    @Query("""
+        select distinct h.mealType
+        from UserFoodHistory h
+        where h.user.id = :userId
+          and h.createdAt >= :start
+          and h.createdAt <  :end
+        """)
+    List<MealType> findDistinctMealsOfDay(
+            @Param("userId") Long userId,
+            @Param("start") LocalDateTime start,
+            @Param("end")   LocalDateTime end
     );
 }
 

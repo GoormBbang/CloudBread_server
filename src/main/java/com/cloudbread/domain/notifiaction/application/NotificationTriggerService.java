@@ -6,6 +6,7 @@ import com.cloudbread.domain.notifiaction.repository.NotificationRepository;
 
 import com.cloudbread.domain.user.domain.entity.User;
 
+import com.cloudbread.domain.user.domain.enums.MealType;
 import com.cloudbread.domain.user.domain.repository.UserFoodHistoryRepository;
 import com.cloudbread.domain.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +15,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.cloudbread.domain.nutrition.constant.RecommendedNutrientConstants.getRecommendedValue;
 /**
@@ -108,15 +111,7 @@ public class NotificationTriggerService {
                 topKo,   // 한글 태그로 저장
                 null
         );
-//        String body = "오늘 " + String.join("·", toKoreanTags(top)) + " 영양소가 권장량보다 부족해요.";
-//        Notification n = Notification.create(
-//                user,
-//                NotificationType.NUTRIENT_DEFICIT,
-//                "영양소 부족 알림",
-//                body,
-//                top,   // tags
-//                null   // 딥링크 없음(정보성)
-//        );
+
         notificationRepository.save(n);
         if (sendNow) notificationPushService.pushIfConnected(n);
 
@@ -139,14 +134,14 @@ public class NotificationTriggerService {
         }
         if (achievedEn.isEmpty()) return;
 
-        var achievedKo = toKoreanTags(achievedEn); // ✅ 한글로 변환
+        var achievedKo = toKoreanTags(achievedEn); //  한글로 변환
         String body = "오늘 " + String.join("·", achievedKo) + " 목표를 달성했어요! 잘하셨어요 👏";
         Notification n = Notification.create(
                 user,
                 NotificationType.NUTRIENT_GOAL_ACHIEVED,
                 "목표 달성",
                 body,
-                achievedKo, // ✅ 한글 태그로 저장
+                achievedKo, //  한글 태그로 저장
                 null
         );
 
@@ -198,13 +193,88 @@ public class NotificationTriggerService {
             default -> k;
         }).toList();
     }
+
+    /**
+     *
+     * 하루 전체 스캔해서, 누락 끼니만 알림 생성
+     */
+
+    @Transactional
+    public void generateMealMissedForDay(Long userId, LocalDate dateOrNull, boolean sendNow) {
+        User user = getTargetUser(userId);
+        LocalDate date = (dateOrNull != null) ? dateOrNull : LocalDate.now();
+
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end   = start.plusDays(1);
+
+        // 1) 오늘 먹은 끼니
+        var eaten = new HashSet<>(userFoodHistoryRepository.findDistinctMealsOfDay(user.getId(), start, end));
+
+        // 2) 오늘 이미 생성된 '끼니 누락' 알림 (태그 한글: 아침/점심/저녁)
+        var existing = notificationRepository.findByUserAndTypeInRange(
+                user.getId(), NotificationType.MEAL_LOG_MISSED, start, end);
+        var alreadyKo = existing.stream()
+                .flatMap(n -> n.getTags() == null ? Stream.<String>empty() : n.getTags().stream())
+                .collect(Collectors.toSet());
+
+        // 3) 누락된 끼니 계산 (아침/점심/저녁 중 eaten/alreadyKo 제외)
+        record Miss(String ko, MealType mt) {}
+        List<Miss> targets = new ArrayList<>();
+
+        // targets 구성
+        if (!eaten.contains(MealType.BREAKFAST) /** && !alreadyKo.contains("아침") **/)
+            targets.add(new Miss(mealKo(MealType.BREAKFAST), MealType.BREAKFAST));
+        if (!eaten.contains(MealType.LUNCH) /**&&  !alreadyKo.contains("점심") **/)
+            targets.add(new Miss(mealKo(MealType.LUNCH), MealType.LUNCH));
+        if (!eaten.contains(MealType.DINNER) /**&& !alreadyKo.contains("저녁") **/)
+            targets.add(new Miss(mealKo(MealType.DINNER), MealType.DINNER));
+
+        if (targets.isEmpty()) {
+            log.info("[MEAL_MISSED/DAY] nothing to create. userId={}, date={}", user.getId(), date);
+            return;
+        }
+
+        // 4) 각 누락 끼니에 대해 알림 생성 (태그는 한글로 저장)
+        for (var t : targets) {
+            String body = missedBody(t.mt);
+            Notification n = Notification.create(
+                    user,
+                    NotificationType.MEAL_LOG_MISSED,
+                    "식단 기록 누락",
+                    body,
+                    List.of(t.ko), // 한글 태그
+                    null
+            );
+            notificationRepository.save(n);
+            if (sendNow) notificationPushService.pushIfConnected(n);
+
+            log.info("[MEAL_MISSED/DAY] created id={} userId={} date={} mealKo={}", n.getId(), user.getId(), date, t.ko);
+        }
+    }
+
+    private static String mealKo(MealType m) {
+        return switch (m) {
+            case BREAKFAST -> "아침";
+            case LUNCH     -> "점심";
+            case DINNER    -> "저녁";
+            default        -> "기타"; // 또는 throw new IllegalArgumentException("Unexpected meal: " + m);
+        };
+    }
+
+    private static String missedBody(MealType m) {
+        return switch (m) {
+            case BREAKFAST -> "아침 식사를 기록하지 않았어요. 정확한 영양 관리를 위해 기록해주세요.";
+            case LUNCH     -> "점심 식사를 기록하지 않았어요. 정확한 영양 관리를 위해 기록해주세요.";
+            case DINNER    -> "저녁 식사를 기록하지 않았어요. 정확한 영양 관리를 위해 기록해주세요.";
+            default        -> "식사를 기록하지 않았어요. 정확한 영양 관리를 위해 기록해주세요.";
+        };
+    }
+
+
 }
 
 
-//    @Transactional
-//    public void generateMealMissedFake(Long userId, LocalDate date, MealType meal, boolean sendNow) {
-//
-//    }
+
 
 //   더미 save
 //    /** [FAKE] 21:00 일일요약: 부족 1건 + 목표 1건을 하드코딩 생성 */
