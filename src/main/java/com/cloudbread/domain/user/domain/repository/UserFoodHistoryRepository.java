@@ -1,6 +1,7 @@
 package com.cloudbread.domain.user.domain.repository;
 
 import com.cloudbread.domain.food_history.dto.DayMealRecord;
+import com.cloudbread.domain.notifiaction.application.dto.NutrientTotal;
 import com.cloudbread.domain.user.domain.entity.UserFoodHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -73,5 +74,33 @@ public interface UserFoodHistoryRepository extends JpaRepository<UserFoodHistory
             @Param("endOfDay") LocalDateTime endOfDay
     );
 
+
+    /**
+     *
+     * SUM( fn.value * (ufh.intake_percent / 100.0) )
+     * - fn.value : 해당 음식의 영양소 1회 기준량
+     * - intake_percent : 실제로 먹은 비율 (1~100)
+     * - 예: 엽산 700μg짜리 음식을 **50%**만 먹었으면 기여량은 350μg.
+     *
+     * - 그룹 기준 : nutrient.name
+     * → 결과를 Map<String, Double>로 변환해서 totals로 사용.
+     */
+    @Query(value = """
+    SELECT n.name AS nutrientKey,
+           SUM(COALESCE(fn.value, 0) * (ufh.intake_percent / 100.0)) AS totalAmount
+    FROM user_food_history ufh
+    JOIN foods f                ON f.id = ufh.food_id
+    JOIN food_nutrients fn      ON fn.food_id = f.id
+    JOIN nutrients n            ON n.id = fn.nutrient_id
+    WHERE ufh.user_id = :userId
+      AND ufh.created_at >= :start
+      AND ufh.created_at <  :end
+    GROUP BY n.name
+""", nativeQuery = true)
+    List<Object[]> sumDailyNutrientsRaw(
+            @Param("userId") Long userId,
+            @Param("start")  LocalDateTime startInclusive,
+            @Param("end")    LocalDateTime endExclusive
+    );
 }
 

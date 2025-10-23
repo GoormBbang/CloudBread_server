@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 /**
  * 알림 PUSH : "이미 만들어진 알림"을, SSE와 연결되어 있으면 즉시 SSE로 기록 + send_at 기록
@@ -41,7 +43,7 @@ public class NotificationPushService {
                 String.valueOf(n.getId()),
                 NotificationMapper.toStreamPayload(n)
         );
-        n.setSentAt(Instant.now());
+        n.setSentAt(LocalDateTime.now(ZoneId.of("Asia/Seoul")));
         notificationRepository.save(n); // send_at 반영
         log.info("[PUSH] pushed. userId={}, notifId={}", n.getUser().getId(), n.getId());
     }

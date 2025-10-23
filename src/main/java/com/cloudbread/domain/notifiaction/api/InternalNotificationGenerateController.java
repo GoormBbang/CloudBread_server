@@ -26,15 +26,15 @@ public class InternalNotificationGenerateController {
     /** 21:00 일일 요약(부족/목표) */
     @PostMapping("/daily")
     public void generateDaily(@RequestBody DailyReq req, @AuthenticationPrincipal CustomOAuth2User principal) {
-        notificationTriggerService.generateDailyFake(principal.getUserId(), req.date, req.sendNow);
+        notificationTriggerService.generateDaily(principal.getUserId(), req.date, req.sendNow);
     }
 
 
     /** 10:30/14:30/20:30 끼니 누락 */
-    @PostMapping("/meal-missed")
-    public void generateMealMissed(@RequestBody MissedReq req, @AuthenticationPrincipal CustomOAuth2User principal) {
-        notificationTriggerService.generateMealMissedFake(principal.getUserId(), req.date, req.meal, req.sendNow);
-    }
+//    @PostMapping("/meal-missed")
+//    public void generateMealMissed(@RequestBody MissedReq req, @AuthenticationPrincipal CustomOAuth2User principal) {
+//        notificationTriggerService.generateMealMissedFake(principal.getUserId(), req.date, req.meal, req.sendNow);
+//    }
 
     @lombok.Data static class DailyReq {
         public java.time.LocalDate date;     // null이면 오늘
