@@ -25,7 +25,7 @@ MealPlanController {
     private final MealPlanService mealPlanService;
 
     /**
-     * ✅ AI 추천 식단 생성 요청
+     * AI 추천 식단 생성 요청
      * 로그인된 사용자의 정보를 기반으로 FastAPI 호출 및 식단 데이터 저장
      */
     @PostMapping("/refresh")

@@ -109,11 +109,18 @@ public class MealPlanServiceImpl implements MealPlanService {
         }
 
         // 8. CascadeType.ALL 덕분에 item 자동 저장
-        mealPlanRepository.save(mealPlan);
+        //mealPlanRepository.save(mealPlan);
+        MealPlan saved = mealPlanRepository.save(mealPlan);
+        log.info("[식단 저장 완료] mealPlanId={}, userId={}, planDate={}", saved.getId(), userId, saved.getPlanDate());
 
         // 9. 영양 밸런스 즉시 계산 후 DB 반영 (KST 기준)
         userNutritionStatsService.getNutritionBalance(userId, planDate);
 
+        // 10. DB 기준 데이터로 aiResponse 업데이트
+        aiResponse.setPlanId(saved.getId());
+        aiResponse.setPlanDate(saved.getPlanDate().toString());
+
+        // 11. 최종 반환
         // 10. FastAPI 원본 그대로 리턴 (시간대만 올바르게 바꿔서 리턴)
         aiResponse.setPlanDate(planDate.toString());
         return aiResponse;
