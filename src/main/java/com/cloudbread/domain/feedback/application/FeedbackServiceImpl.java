@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 @Slf4j
@@ -39,7 +40,7 @@ public class FeedbackServiceImpl implements FeedbackService {
 
     @Override
     @Transactional
-    public String generateFeedback(Long userId) {
+    public FeedbackResponseDto generateFeedback(Long userId) {
         log.info("[Feedback] FastAPI 피드백 요청 시작 userId={}", userId);
 
         // 1. 사용자 컨텍스트 구성 (FastAPI 전송용)
@@ -79,18 +80,27 @@ public class FeedbackServiceImpl implements FeedbackService {
         log.info("[FastAPI 원본 응답]: {}", response.getBody());
 
         // 6. 응답 처리 및 DB 저장
+        FeedbackResponseDto feedbackResponse;
+
+        // 6. 응답 처리 및 DB 저장
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
             mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
             mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
-            FeedbackResponseDto feedbackResponse =
-                    mapper.readValue(response.getBody(), FeedbackResponseDto.class);
+            feedbackResponse = mapper.readValue(response.getBody(), FeedbackResponseDto.class);
 
             if (feedbackResponse.isSuccess() && feedbackResponse.getResult() != null) {
                 String content = feedbackResponse.getResult().getFeedbackSummary();
-                String feedbackDateStr = feedbackResponse.getResult().getFeedbackDate();
+
+                // FastAPI UTC → 한국시간(KST)으로 덮어쓰기
+                ZoneId KST = ZoneId.of("Asia/Seoul");
+                LocalDate planDate = LocalDate.now(KST);
+                String planDateStr = planDate.toString();
+                feedbackResponse.getResult().setFeedbackDate(planDateStr);
+
+                log.info("AI 피드백 저장: planDate(KST)={}", planDateStr);
 
                 User user = userRepository.findById(userId)
                         .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 유저 ID"));
@@ -98,17 +108,58 @@ public class FeedbackServiceImpl implements FeedbackService {
                 Feedback feedback = Feedback.builder()
                         .user(user)
                         .content(content)
-                        .feedbackDate(LocalDate.parse(feedbackDateStr))
+                        .feedbackDate(planDate)
                         .build();
 
                 feedbackRepository.save(feedback);
                 log.info("[피드백 저장 완료] id={}, userId={}, createdAt={}",
                         feedback.getId(), userId, feedback.getCreatedAt());
+            } else {
+                log.warn("[FastAPI 응답 실패 or 비정상 응답]: {}", feedbackResponse);
             }
+
         } catch (Exception e) {
             log.error("[FastAPI 응답 처리 실패]: {}", e.getMessage(), e);
+            throw new IllegalStateException("FastAPI 피드백 응답 처리 중 오류가 발생했습니다.");
         }
 
-        return response.getBody();
+        return feedbackResponse;
     }
+//        try {
+//            ObjectMapper mapper = new ObjectMapper();
+//            mapper.registerModule(new JavaTimeModule());
+//            mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+//            mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+//
+//            FeedbackResponseDto feedbackResponse =
+//                    mapper.readValue(response.getBody(), FeedbackResponseDto.class);
+//
+//            if (feedbackResponse.isSuccess() && feedbackResponse.getResult() != null) {
+//                String content = feedbackResponse.getResult().getFeedbackSummary();
+//             //   String feedbackDateStr = feedbackResponse.getResult().getFeedbackDate();
+//
+//                ZoneId KST = ZoneId.of("Asia/Seoul");
+//                LocalDate planDate = LocalDate.now(KST);
+//                log.info("ai 추천 식단, planDate={}", planDate);
+//
+//
+//                User user = userRepository.findById(userId)
+//                        .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 유저 ID"));
+//
+//                Feedback feedback = Feedback.builder()
+//                        .user(user)
+//                        .content(content)
+//                        .feedbackDate(planDate)
+//                        .build();
+//
+//                feedbackRepository.save(feedback);
+//                log.info("[피드백 저장 완료] id={}, userId={}, createdAt={}",
+//                        feedback.getId(), userId, feedback.getCreatedAt());
+//            }
+//        } catch (Exception e) {
+//            log.error("[FastAPI 응답 처리 실패]: {}", e.getMessage(), e);
+//        }
+//
+//        return response.getBody();
+//    }
 }
