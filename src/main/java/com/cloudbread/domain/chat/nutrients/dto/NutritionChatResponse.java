@@ -27,6 +27,7 @@ public class NutritionChatResponse {
     public static class NutrientValue {
         private java.math.BigDecimal value;
         private String unit; // g | mg | μg
+        private String kname; // 영양성분 한국어명 (예: 탄수화물)
     }
 
     @Getter @Builder
