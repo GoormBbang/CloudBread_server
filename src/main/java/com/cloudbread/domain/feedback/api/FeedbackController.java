@@ -19,13 +19,29 @@ public class FeedbackController {
     private final FeedbackService feedbackService;
 
     @PostMapping("/feedback")
+    public BaseResponse<FeedbackResponseDto.Result> createNutritionFeedback(
     public BaseResponse<FeedbackResponseDto> createNutritionFeedback(
             @AuthenticationPrincipal CustomOAuth2User principal
     ) {
         Long userId = principal.getUser().getId();
-        log.info("📩 [FastAPI 피드백 요청] userId={}", userId);
+        log.info("[FastAPI 피드백 요청] userId={}", userId);
+
+
+        return feedbackService.generateFeedback(userId);
 
         // ✅ FastAPI 응답 JSON을 그대로 반환
         return BaseResponse.onSuccess(SuccessStatus.FEEDBACK_SUCCESS, feedbackService.generateFeedback(userId));
+
     }
+
+//    @PostMapping("/feedback")
+//    public String createNutritionFeedback(
+//            @AuthenticationPrincipal CustomOAuth2User principal
+//    ) {
+//        Long userId = principal.getUser().getId();
+//        log.info("[FastAPI 피드백 요청] userId={}", userId);
+//
+//        // FastAPI 응답 JSON을 그대로 반환
+//        return feedbackService.generateFeedback(userId);
+//    }
 }

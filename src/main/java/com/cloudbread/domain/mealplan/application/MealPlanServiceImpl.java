@@ -70,6 +70,12 @@ public class MealPlanServiceImpl implements MealPlanService {
 
         MealPlanResponseDto aiResponse = fastApiMealPlanClient.requestMealPlan(requestDto);
 
+        // 5. 날짜 처리
+        String planDateStr = aiResponse.getPlanDate();
+        LocalDate planDate = (planDateStr != null && !planDateStr.isBlank())
+                ? LocalDate.parse(planDateStr)
+                : LocalDate.now();
+
         // 5. 날짜 처리 (KST 기준)
         ZoneId KST = ZoneId.of("Asia/Seoul");
         LocalDate planDate = LocalDate.now(KST);
@@ -109,6 +115,9 @@ public class MealPlanServiceImpl implements MealPlanService {
         }
 
         // 8. CascadeType.ALL 덕분에 item 자동 저장
+        mealPlanRepository.save(mealPlan);
+
+        // 9. FastAPI 원본 그대로 리턴
         //mealPlanRepository.save(mealPlan);
         MealPlan saved = mealPlanRepository.save(mealPlan);
         log.info("[식단 저장 완료] mealPlanId={}, userId={}, planDate={}", saved.getId(), userId, saved.getPlanDate());

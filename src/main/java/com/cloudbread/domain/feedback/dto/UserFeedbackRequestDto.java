@@ -10,7 +10,7 @@ import java.util.List;
 
 public class UserFeedbackRequestDto {
 
-    // ✅ FastAPI 피드백용 유저 DTO
+    // FastAPI 피드백용 유저 DTO
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
@@ -48,23 +48,23 @@ public class UserFeedbackRequestDto {
         }
     }
 
-    // ✅ 피드백 API용 음식 기록 DTO
+    // 피드백 API용 음식 기록 DTO
     @Getter
     @AllArgsConstructor
     @NoArgsConstructor
     public static class FoodHistoryDto {
         private String mealType;   // 식사 타입 (BREAKFAST/LUNCH/DINNER)
-        private String foodName;   // ✅ FastAPI에서 필수
+        private String foodName;   // FastAPI에서 필수
         private int intakePercent; // 섭취량 (0~100)
 
-        // ✅ ISO 문자열로 직렬화 ("2025-10-12T08:30:00")
+        // ISO 문자열로 직렬화 ("2025-10-12T08:30:00")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime createdAt;
 
         public static FoodHistoryDto fromEntity(UserFoodHistory entity) {
             return new FoodHistoryDto(
                     entity.getMealType().name(),
-                    entity.getFood().getName(),  // ✅ foodName 반드시 포함
+                    entity.getFood().getName(),  // foodName 반드시 포함
                     entity.getIntakePercent(),
                     entity.getCreatedAt()
             );
