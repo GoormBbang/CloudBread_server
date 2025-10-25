@@ -42,11 +42,11 @@ public class MealPlanServiceImpl implements MealPlanService {
     @Override
     public MealPlanResponseDto refreshMealPlan(Long userId) {
 
-        // ✅ 1. 유저 조회
+        // 1. 유저 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다. ID: " + userId));
 
-        // ✅ 2. 건강/알러지/식단 정보 조회
+        // 2. 건강/알러지/식단 정보 조회
         List<String> healths = userHealthRepository.findByUserId(userId)
                 .stream().map(h -> h.getHealthType().getName().name()).collect(Collectors.toList());
 
@@ -56,38 +56,31 @@ public class MealPlanServiceImpl implements MealPlanService {
         List<String> diets = userDietRepository.findByUserId(userId)
                 .stream().map(d -> d.getDietType().getName().name()).collect(Collectors.toList());
 
-        // ✅ 3. 최근 음식 기록 조회
+        // 3. 최근 음식 기록 조회
         List<UserRequestDto.FoodHistoryDto> foodHistory = userFoodHistoryRepository
                 .findRecentByUserId(userId, LocalDate.now().minusDays(1).atStartOfDay())
                 .stream().map(UserRequestDto.FoodHistoryDto::fromEntity).collect(Collectors.toList());
 
-        // ✅ 4. FastAPI 요청 생성 및 호출
+        // 4. FastAPI 요청 생성 및 호출
         UserRequestDto.AiUserRequest aiUserRequest = UserRequestDto.AiUserRequest.from(user, foodHistory);
         MealPlanRequestDto requestDto = MealPlanRequestDto.of(aiUserRequest, healths, allergies, diets);
 
         MealPlanResponseDto aiResponse = fastApiMealPlanClient.requestMealPlan(requestDto);
 
-        // ✅ 5. 날짜 처리
+        // 5. 날짜 처리
         String planDateStr = aiResponse.getPlanDate();
         LocalDate planDate = (planDateStr != null && !planDateStr.isBlank())
                 ? LocalDate.parse(planDateStr)
                 : LocalDate.now();
 
-        // ✅ 6. MealPlan 엔티티 생성
+        // 6. MealPlan 엔티티 생성
         MealPlan mealPlan = MealPlan.builder()
                 .user(user)
                 .planDate(planDate)
                 .reasonDesc(null)
                 .build();
 
-        // ✅ 7. FastAPI 응답 로그
-//        log.info("[AI 응답 섹션 수] {}", aiResponse.getSections() != null ? aiResponse.getSections().size() : 0);
-//        aiResponse.getSections().forEach(section ->
-//                log.info(" - 섹션 {} : items = {}", section.getMealType(),
-//                        section.getItems() != null ? section.getItems().size() : 0)
-//        );
-
-        // ✅ 8. DB 저장용 item 변환 (FastAPI 원본 그대로 DB에만 저장)
+        // 7. DB 저장용 item 변환 (FastAPI 원본 그대로 DB에만 저장)
         if (aiResponse.getSections() != null) {
             for (MealPlanResponseDto.SectionDto section : aiResponse.getSections()) {
                 for (MealPlanResponseDto.FoodItemDto itemDto : section.getItems()) {
@@ -108,10 +101,10 @@ public class MealPlanServiceImpl implements MealPlanService {
             }
         }
 
-        // ✅ 9. CascadeType.ALL 덕분에 item 자동 저장
+        // 8. CascadeType.ALL 덕분에 item 자동 저장
         mealPlanRepository.save(mealPlan);
 
-        // ✅ 10. FastAPI 원본 그대로 리턴
+        // 9. FastAPI 원본 그대로 리턴
         return aiResponse;
     }
 
