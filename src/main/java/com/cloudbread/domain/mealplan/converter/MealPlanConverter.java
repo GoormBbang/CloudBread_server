@@ -46,25 +46,13 @@ public class MealPlanConverter {
         );
     }
 
-
-//    private FoodItemDto toItemResponse(MealPlanItem item) {
-//        Food food = item.getFood();
-//
-//        return new FoodItemDto(
-//                food.getId(),
-//                food.getName(),
-//                item.getPortionLabel(),
-//                item.getEstCalories(),
-//                food.getCategory()
-//        );
-//    }
 private FoodItemDto toItemResponse(MealPlanItem item) {
     return new FoodItemDto(
             item.getFood().getId(),          // DB FK
-            item.getFoodName(),              // ✅ FastAPI 원본 name
-            item.getPortionLabel(),          // ✅ FastAPI 원본 portion
-            item.getEstCalories(),           // ✅ FastAPI 원본 kcal
-            item.getFoodCategory()           // ✅ FastAPI 원본 category
+            item.getFoodName(),              // FastAPI 원본 name
+            item.getPortionLabel(),          // FastAPI 원본 portion
+            item.getEstCalories(),           // FastAPI 원본 kcal
+            item.getFoodCategory()           // FastAPI 원본 category
     );
 }
 

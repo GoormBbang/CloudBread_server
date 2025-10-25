@@ -176,6 +176,28 @@ public class NutritionChatServiceImpl implements NutritionChatService {
     }
 
     // == helpers ==
+
+
+    // 영양소 영문키(소문자) → 한국어명
+    public static final Map<String, String> KNAME_MAP = Map.ofEntries(
+            Map.entry("carbs",          "탄수화물"),
+            Map.entry("proteins",       "단백질"),
+            Map.entry("fats",           "지방"),
+            Map.entry("sugars",         "당류"),
+            Map.entry("saturated_fat",  "포화지방"),
+            Map.entry("trans_fat",      "트랜스지방"),
+            Map.entry("cholesterol",    "콜레스테롤"),
+            Map.entry("sodium",         "나트륨"),
+            Map.entry("folic_acid",     "엽산"),
+            Map.entry("iron",           "철"),
+            Map.entry("calcium",        "칼슘"),
+            Map.entry("moisture",       "수분")
+    );
+
+    public static String knameFor(String key) {
+        if (key == null) return null;
+        return KNAME_MAP.getOrDefault(key, key);
+    }
     private NutritionChatResponse.SelectedFoodSummary buildFoodSummary(Food food) {
         Map<String, NutritionChatResponse.NutrientValue> nutrients = new LinkedHashMap<>();
         BigDecimal calories = food.getCalories(); // 별도 필드
@@ -189,9 +211,11 @@ public class NutritionChatServiceImpl implements NutritionChatService {
             if ("calories".equals(key)) continue;
 
             String unit = unitSymbol(fn.getNutrient().getUnit());
+            String kname = knameFor(key);                           // 한국어명 매핑
             nutrients.put(key, NutritionChatResponse.NutrientValue.builder()
                     .value(fn.getValue())
                     .unit(unit)
+                    .kname(kname)
                     .build());
         }
 

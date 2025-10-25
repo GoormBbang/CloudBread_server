@@ -13,6 +13,7 @@ import com.cloudbread.domain.user.domain.entity.User;
 import com.cloudbread.domain.user.domain.enums.MealType;
 import com.cloudbread.domain.user.domain.repository.*;
 import com.cloudbread.domain.user.dto.UserRequestDto;
+import com.cloudbread.domain.nutrition.application.UserNutritionStatsService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -38,6 +40,7 @@ public class MealPlanServiceImpl implements MealPlanService {
     private final MealPlanRepository mealPlanRepository;
     private final FoodRepository foodRepository;
     private final MealPlanConverter mealPlanConverter;
+    private final UserNutritionStatsService userNutritionStatsService;
 
     @Override
     public MealPlanResponseDto refreshMealPlan(Long userId) {
@@ -58,7 +61,7 @@ public class MealPlanServiceImpl implements MealPlanService {
 
         // 3. 최근 음식 기록 조회
         List<UserRequestDto.FoodHistoryDto> foodHistory = userFoodHistoryRepository
-                .findRecentByUserId(userId, LocalDate.now().minusDays(1).atStartOfDay())
+                .findRecentByUserId(userId, LocalDate.now(ZoneId.of("Asia/Seoul")).minusDays(1).atStartOfDay())
                 .stream().map(UserRequestDto.FoodHistoryDto::fromEntity).collect(Collectors.toList());
 
         // 4. FastAPI 요청 생성 및 호출
@@ -72,6 +75,16 @@ public class MealPlanServiceImpl implements MealPlanService {
         LocalDate planDate = (planDateStr != null && !planDateStr.isBlank())
                 ? LocalDate.parse(planDateStr)
                 : LocalDate.now();
+
+        // 5. 날짜 처리 (KST 기준)
+        ZoneId KST = ZoneId.of("Asia/Seoul");
+        LocalDate planDate = LocalDate.now(KST);
+
+//        String planDateStr = aiResponse.getPlanDate();
+//        LocalDate planDate = (planDateStr != null && !planDateStr.isBlank())
+//                ? LocalDate.parse(planDateStr)
+//                : LocalDate.now(ZoneId.of("Asia/Seoul")); // 한국 시간 기준으로 수정
+        log.info("ai 추천 식단, planDate={}", planDate);
 
         // 6. MealPlan 엔티티 생성
         MealPlan mealPlan = MealPlan.builder()
@@ -105,6 +118,20 @@ public class MealPlanServiceImpl implements MealPlanService {
         mealPlanRepository.save(mealPlan);
 
         // 9. FastAPI 원본 그대로 리턴
+        //mealPlanRepository.save(mealPlan);
+        MealPlan saved = mealPlanRepository.save(mealPlan);
+        log.info("[식단 저장 완료] mealPlanId={}, userId={}, planDate={}", saved.getId(), userId, saved.getPlanDate());
+
+        // 9. 영양 밸런스 즉시 계산 후 DB 반영 (KST 기준)
+        userNutritionStatsService.getNutritionBalance(userId, planDate);
+
+        // 10. DB 기준 데이터로 aiResponse 업데이트
+        aiResponse.setPlanId(saved.getId());
+        aiResponse.setPlanDate(saved.getPlanDate().toString());
+
+        // 11. 최종 반환
+        // 10. FastAPI 원본 그대로 리턴 (시간대만 올바르게 바꿔서 리턴)
+        aiResponse.setPlanDate(planDate.toString());
         return aiResponse;
     }
 
@@ -114,5 +141,61 @@ public class MealPlanServiceImpl implements MealPlanService {
         } catch (Exception e) {
             return MealType.ETC;
         }
+    }
+
+    /**
+     * 오늘(KST) 식단 조회
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public MealPlanResponseDto getTodayMealPlan(Long userId) {
+        LocalDate todayKst = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        log.info("todayKst={}", todayKst);
+
+        MealPlan mealPlan = mealPlanRepository
+                .findLatestWithItemsByUserIdAndPlanDate(userId, todayKst)
+                .orElseThrow(() -> new NoSuchElementException("오늘 날짜의 식단이 없습니다."));
+
+        return toResponseDto(mealPlan);
+    }
+
+    /**
+     * 엔티티 → 응답 DTO 즉시 변환 (섹션 그룹화 + kcal 합산)
+     */
+    private MealPlanResponseDto toResponseDto(MealPlan mealPlan) {
+        Map<MealType, List<MealPlanItem>> byType = mealPlan.getMealPlanItems().stream()
+                .collect(Collectors.groupingBy(MealPlanItem::getMealType, LinkedHashMap::new, Collectors.toList()));
+
+        List<MealPlanResponseDto.SectionDto> sections = new ArrayList<>();
+
+        for (Map.Entry<MealType, List<MealPlanItem>> entry : byType.entrySet()) {
+            List<MealPlanItem> items = entry.getValue();
+
+            int totalKcal = items.stream()
+                    .mapToInt(MealPlanItem::getEstCalories)
+                    .sum();
+
+            List<MealPlanResponseDto.FoodItemDto> itemDtos = items.stream()
+                    .map(i -> new MealPlanResponseDto.FoodItemDto(
+                            i.getFood() != null ? i.getFood().getId() : null,
+                            i.getFoodName(),
+                            i.getPortionLabel(),
+                            i.getEstCalories(),
+                            i.getFoodCategory()
+                    ))
+                    .collect(Collectors.toList());
+
+            sections.add(new MealPlanResponseDto.SectionDto(
+                    (entry.getKey() != null ? entry.getKey() : MealType.ETC).name(),
+                    totalKcal,
+                    itemDtos
+            ));
+        }
+
+        MealPlanResponseDto dto = new MealPlanResponseDto();
+        dto.setPlanId(mealPlan.getId());
+        dto.setPlanDate(mealPlan.getPlanDate() != null ? mealPlan.getPlanDate().toString() : null);
+        dto.setSections(sections);
+        return dto;
     }
 }

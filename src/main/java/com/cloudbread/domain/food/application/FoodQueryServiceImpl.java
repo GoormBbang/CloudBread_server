@@ -23,6 +23,23 @@ import java.util.Map;
 public class FoodQueryServiceImpl implements FoodQueryService {
     private final FoodRepository foodRepository;
     private final FoodNutrientRepository foodNutrientRepository;
+
+
+    // 영양소 영문키(소문자) → 한국어명 매핑
+    private static final Map<String, String> KNAME_MAP = Map.ofEntries(
+            Map.entry("carbs",          "탄수화물"),
+            Map.entry("proteins",       "단백질"),
+            Map.entry("fats",           "지방"),
+            Map.entry("sugars",         "당류"),
+            Map.entry("saturated_fat",  "포화지방"),
+            Map.entry("trans_fat",      "트랜스지방"),
+            Map.entry("cholesterol",    "콜레스테롤"),
+            Map.entry("sodium",         "나트륨"),
+            Map.entry("folic_acid",     "엽산"),
+            Map.entry("iron",           "철"),
+            Map.entry("calcium",        "칼슘"),
+            Map.entry("moisture",       "수분")
+    );
     @Override
     @Transactional(readOnly = true)
     public List<FoodResponse.SuggestItem> suggest(String q, int limit) {
@@ -64,9 +81,12 @@ public class FoodQueryServiceImpl implements FoodQueryService {
             if ("calories".equals(key)) continue; // 칼로리는 별도 필드
 
             String unit = unitSymbol(fn.getNutrient().getUnit());  // "g" | "mg" | "μg" 등
+            String kname = knameFor(key);                           // 한국어명
+
             map.put(key, PhotoAnalysisResponse.NutrientValue.builder()
                     .value(fn.getValue())
                     .unit(unit)
+                    .kname(kname)
                     .build());
         }
         return map;
@@ -78,5 +98,10 @@ public class FoodQueryServiceImpl implements FoodQueryService {
 
     private String unitSymbol(Unit u) {
         return (u == null) ? null : u.name().toLowerCase();
+    }
+
+    private String knameFor(String key) {
+        if (key == null) return null;
+        return KNAME_MAP.getOrDefault(key, key); // 매핑 없으면 원문 그대로(안전)
     }
 }

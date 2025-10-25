@@ -49,7 +49,7 @@ public class UserNutritionStatsServiceImpl implements UserNutritionStatsService 
     private final UserRepository userRepository;
     private final UserDailyNutritionRepository userDailyNutritionRepository;
 
-    // ✅ 임산부 일일 권장 섭취량
+    // 임산부 일일 권장 섭취량
     private static final double FOLIC_ACID_DRI = 600.0;  // μg
     private static final double CALCIUM_DRI = 930.0;    // mg
     private static final double IRON_DRI = 24.0;        // mg

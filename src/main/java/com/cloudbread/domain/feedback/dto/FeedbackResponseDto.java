@@ -12,7 +12,7 @@ import lombok.*;
 public class FeedbackResponseDto {
 
     @JsonProperty("isSuccess")
-    private boolean isSuccess; // ✅ FastAPI JSON과 일치
+    private boolean isSuccess;
     private String code;
     private String message;
 

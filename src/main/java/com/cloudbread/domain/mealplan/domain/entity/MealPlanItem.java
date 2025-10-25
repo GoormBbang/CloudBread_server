@@ -53,7 +53,7 @@ public class MealPlanItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ✅ 연관관계 주인 (FK 소유)
+    // 연관관계 주인 (FK 소유)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meal_plan_id")
     @Setter // MealPlan.addMealPlanItem()에서 사용

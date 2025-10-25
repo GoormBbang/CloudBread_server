@@ -36,6 +36,7 @@ public enum SuccessStatus implements BaseCode {
 
     //mealplan
     MEAL_PLAN_CREATE_SUCCESS(HttpStatus.OK, "MEALPLAN_200", "AI 추천 식단 생성 요청 완료"),
+    MEAL_PLAN_READ_SUCCESS(HttpStatus.OK, "MEALPLAN_200", "AI 추천 식단 조회 성공"),
 
     // photo-analysis
     PHOTO_UPLOAD_SUCCESS(HttpStatus.OK, "PHOTO_400", "사진이 정상적으로 업로드되었습니다."),

@@ -1,7 +1,9 @@
 package com.cloudbread.domain.user.domain.repository;
 
 import com.cloudbread.domain.food_history.dto.DayMealRecord;
+import com.cloudbread.domain.notifiaction.application.dto.NutrientTotal;
 import com.cloudbread.domain.user.domain.entity.UserFoodHistory;
+import com.cloudbread.domain.user.domain.enums.MealType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -58,15 +60,69 @@ public interface UserFoodHistoryRepository extends JpaRepository<UserFoodHistory
     List<UserFoodHistory> findByUserIdAndDateWithFood(@Param("userId") Long userId, @Param("date") LocalDate date);
 
 
-    // ✅ 오늘 먹은 음식 조회 (API: /api/users/me/food-history/today)
+    // 오늘 먹은 음식 조회 (API: /api/users/me/food-history/today)
     @Query("""
     SELECT ufh.mealType, f.id, f.name, f.calories, f.imageUrl
     FROM UserFoodHistory ufh
     JOIN ufh.food f
     WHERE ufh.user.id = :userId
-    AND DATE(ufh.createdAt) = :date
+    AND ufh.createdAt BETWEEN :startOfDay AND :endOfDay
     ORDER BY FIELD(ufh.mealType, 'BREAKFAST', 'LUNCH', 'DINNER'), ufh.createdAt
     """)
-    List<Object[]> findTodayFoods(@Param("userId") Long userId, @Param("date") LocalDate date);
+    List<Object[]> findTodayFoods(
+            @Param("userId") Long userId,
+            @Param("startOfDay") LocalDateTime startOfDay,
+            @Param("endOfDay") LocalDateTime endOfDay
+    );
+
+
+    /**
+     *
+     * SUM( fn.value * (ufh.intake_percent / 100.0) )
+     * - fn.value : 해당 음식의 영양소 1회 기준량
+     * - intake_percent : 실제로 먹은 비율 (1~100)
+     * - 예: 엽산 700μg짜리 음식을 **50%**만 먹었으면 기여량은 350μg.
+     *
+     * - 그룹 기준 : nutrient.name
+     * → 결과를 Map<String, Double>로 변환해서 totals로 사용.
+     */
+    @Query(value = """
+    SELECT n.name AS nutrientKey,
+           SUM(COALESCE(fn.value, 0) * (ufh.intake_percent / 100.0)) AS totalAmount
+    FROM user_food_history ufh
+    JOIN foods f                ON f.id = ufh.food_id
+    JOIN food_nutrients fn      ON fn.food_id = f.id
+    JOIN nutrients n            ON n.id = fn.nutrient_id
+    WHERE ufh.user_id = :userId
+      AND ufh.created_at >= :start
+      AND ufh.created_at <  :end
+    GROUP BY n.name
+""", nativeQuery = true)
+    List<Object[]> sumDailyNutrientsRaw(
+            @Param("userId") Long userId,
+            @Param("start")  LocalDateTime startInclusive,
+            @Param("end")    LocalDateTime endExclusive
+    );
+
+//    // 해당 날짜(하루) 범위에 특정 끼니 기록 존재 여부
+//    boolean existsByUser_IdAndMealTypeAndCreatedAtBetween(
+//            Long userId,
+//            MealType mealType,
+//            LocalDateTime startInclusive,
+//            LocalDateTime endExclusive
+//    );
+
+    @Query("""
+        select distinct h.mealType
+        from UserFoodHistory h
+        where h.user.id = :userId
+          and h.createdAt >= :start
+          and h.createdAt <  :end
+        """)
+    List<MealType> findDistinctMealsOfDay(
+            @Param("userId") Long userId,
+            @Param("start") LocalDateTime start,
+            @Param("end")   LocalDateTime end
+    );
 }
 
