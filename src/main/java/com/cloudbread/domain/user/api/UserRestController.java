@@ -102,6 +102,23 @@ public class UserRestController {
         return BaseResponse.onSuccess(SuccessStatus.USER_INFO_SUCCESS, result);
     }
 
+    @GetMapping("/users/me/ver2")//내 정보 조회
+    public BaseResponse<UserResponseDto.MyInfoResponse> getInfo2Ver2(//내 정보 조회
+                                                                 @AuthenticationPrincipal CustomOAuth2User principal
+    ) {
+        log.info("[/users/me] principalClass={}, id={}",
+                principal==null? "null":principal.getClass().getName(),
+                principal==null? "null":principal.getUserId());
+
+        Long userId = principal.getUserId();
+        log.info("[/users/me] service done. building response...");
+        UserResponseDto.MyInfoResponse result = userService.getInfo2(userId);
+
+        log.info("[/users/me] response ready. returning 200.");
+        return BaseResponse.onSuccess(SuccessStatus.USER_INFO_SUCCESS, result);
+    }
+
+
     @PutMapping("/users/me")//내 정보 수정
     public BaseResponse<UserResponseDto.UpdateResponse> updateMyInfo(
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User,
