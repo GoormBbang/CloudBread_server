@@ -8,9 +8,13 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+
+import org.springframework.security.access.AccessDeniedException;
 
 @RestControllerAdvice
 @Slf4j
@@ -75,6 +79,17 @@ public class GlobalExceptionAdvice {
         );
 
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public void onAuthEx(AuthenticationException e) {
+        log.error("[AUTH-EX] {}", e.toString(), e);
+        throw e; // 기존 흐름 유지 (EntryPoint가 처리)
+    }
+    @ExceptionHandler(AccessDeniedException.class)
+    public void onDenied(AccessDeniedException e) {
+        log.error("[DENIED-EX] {}", e.toString(), e);
+        throw e;
     }
 
 
