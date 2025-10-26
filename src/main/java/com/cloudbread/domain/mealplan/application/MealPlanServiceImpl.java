@@ -71,10 +71,10 @@ public class MealPlanServiceImpl implements MealPlanService {
         MealPlanResponseDto aiResponse = fastApiMealPlanClient.requestMealPlan(requestDto);
 
         // 5. 날짜 처리
-        String planDateStr = aiResponse.getPlanDate();
-        LocalDate planDate = (planDateStr != null && !planDateStr.isBlank())
-                ? LocalDate.parse(planDateStr)
-                : LocalDate.now();
+//        String planDateStr = aiResponse.getPlanDate();
+//        LocalDate planDate = (planDateStr != null && !planDateStr.isBlank())
+//                ? LocalDate.parse(planDateStr)
+//                : LocalDate.now();
 
         // 5. 날짜 처리 (KST 기준)
         ZoneId KST = ZoneId.of("Asia/Seoul");
