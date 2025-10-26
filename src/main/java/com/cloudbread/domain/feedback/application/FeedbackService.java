@@ -15,8 +15,7 @@ public interface FeedbackService {
     //String generateFeedback(Long userId);
     BaseResponse<FeedbackResponseDto.Result> generateFeedback(Long userId);
 
-
-    FeedbackResponseDto generateFeedback(Long userId);
+    //FeedbackResponseDto generateFeedback(Long userId);
 
 }
 
