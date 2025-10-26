@@ -12,6 +12,7 @@ import com.cloudbread.global.common.response.BaseResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.executable.ValidateOnExecution;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,6 +26,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@Slf4j
 public class UserRestController {
     private final UserService userService;
 
@@ -86,11 +88,17 @@ public class UserRestController {
 
     @GetMapping("/users/me")//내 정보 조회
     public BaseResponse<UserResponseDto.MyInfoResponse> getInfo2(//내 정보 조회
-            @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+            @AuthenticationPrincipal CustomOAuth2User principal
     ) {
-        Long userId = customOAuth2User.getUserId();
+        log.info("[/users/me] principalClass={}, id={}",
+                principal==null? "null":principal.getClass().getName(),
+                principal==null? "null":principal.getUserId());
+
+        Long userId = principal.getUserId();
+        log.info("[/users/me] service done. building response...");
         UserResponseDto.MyInfoResponse result = userService.getInfo2(userId);
 
+        log.info("[/users/me] response ready. returning 200.");
         return BaseResponse.onSuccess(SuccessStatus.USER_INFO_SUCCESS, result);
     }
 
