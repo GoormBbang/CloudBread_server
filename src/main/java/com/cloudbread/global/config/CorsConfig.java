@@ -17,7 +17,7 @@ public class CorsConfig {
 
         config.setAllowedOriginPatterns(List.of("*")); // 모든 출처 허용
         // 자격 증명(쿠키, Authorization 헤더 등) 허용
-        config.setAllowCredentials(true);
+        config.setAllowCredentials(false);
 
         // 모든 HTTP 메서드 허용
         config.setAllowedMethods(List.of("*"));
