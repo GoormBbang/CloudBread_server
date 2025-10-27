@@ -77,28 +77,23 @@ public class UserConverter {
     }
 
     //로그인한 사용자 정보 조회
-//    public static UserResponseDto.UserSummaryResponse toUserSummaryResponse(User user) {
-//        return UserResponseDto.UserSummaryResponse.builder()
-//                .id(user.getId())
-//                .nickname(user.getNickname())
-//                .profileImageUrl(user.getProfileImageUrl())
-//                .dueDate(user.getDueDate())
-//                .build();
-//    }
     public static UserResponseDto.UserSummaryResponse toUserSummaryResponse(User user) {
-        LocalDate dueDate = user.getDueDate();
-
-        // ✅ 임신 주차 계산
+        LocalDate dueDate = user.getDueDate(); // 출산 예정일
         Integer pregnancyWeek = null;
+
         if (dueDate != null) {
             ZoneId KST = ZoneId.of("Asia/Seoul");
             LocalDate today = LocalDate.now(KST);
-            // 임신은 보통 40주를 기준으로 계산
+
+            // 임신 시작일: 출산 예정일 - 40주
             LocalDate startDate = dueDate.minusWeeks(40);
+
+            // 현재 몇 주차인지 계산
             long weeks = ChronoUnit.WEEKS.between(startDate, today);
 
-            // 0 이하 방어
-            pregnancyWeek = (int) Math.max(weeks, 0);
+            // 주차 범위를 1~40으로 보정 (1주차부터 시작)
+            int week = (int) Math.min(40, Math.max(1, weeks + 1));
+            pregnancyWeek = week;
         }
 
         return UserResponseDto.UserSummaryResponse.builder()
@@ -109,13 +104,21 @@ public class UserConverter {
                 .pregnancyWeek(pregnancyWeek)
                 .build();
     }
-
+    
     public static UserResponseDto.UpdateUserSummaryResponse toUpdateUserSummaryResponse(User user) {//메인 내 정보 수정
         return UserResponseDto.UpdateUserSummaryResponse.builder()
                 .id(user.getId())
                 .birthDate(user.getBirthDate())
                 .build();
     }
+//    public static UserResponseDto.UserSummaryResponse toUserSummaryResponse(User user) {
+//        return UserResponseDto.UserSummaryResponse.builder()
+//                .id(user.getId())
+//                .nickname(user.getNickname())
+//                .profileImageUrl(user.getProfileImageUrl())
+//                .dueDate(user.getDueDate())
+//                .build();
+//    }
 
 
 }
