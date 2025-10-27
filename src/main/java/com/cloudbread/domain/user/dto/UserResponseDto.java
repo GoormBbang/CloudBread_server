@@ -90,7 +90,7 @@ public class UserResponseDto {
         private Long id;
         private String nickname;
         private String profileImageUrl;
-        private LocalDate dueDate;
+        private LocalDate dueDate;//출산예정일
         private Integer pregnancyWeek;//임신주차
 
     }
