@@ -1,21 +1,51 @@
-# spring config
+
+
+# application.yml - 공통, 기본 프로파일
 spring:
+  jackson:
+    time-zone: Asia/Seoul
+  profiles:
+    default: local
+
   servlet:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
-  config:
-    import: application-secret.yml
 
+#  jackson:
+#    property-naming-strategy: SNAKE_CASE
 
-# Swagger config
-# 로컬 Swagger 접근 url -> http://localhost:8080/swagger-ui/index.html
 springdoc:
   packages-to-scan: com.cloudbread
   default-consumes-media-type: application/json;charset=UTF-8
   default-produces-media-type: application/json;charset=UTF-8
   swagger-ui:
-    path: /
+    path: /api/swagger-ui          # 최종 접속: /api/swagger-ui/index.html
     disable-swagger-default-url: true
     display-request-duration: true
     operations-sorter: alpha
+  api-docs:
+    path: /api/v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+external:
+  fastapi:
+    url: http://cloudbread.133.186.213.185.nip.io
+    mealplan-url: http://cloudbread.133.186.213.185.nip.io/api/food/api/v1/recommend
+    feedback: http://cloudbread.133.186.213.185.nip.io/api/nutrition/api/v1/feedback
+
+# elasticsearch 관련
+search:
+  engine: jpa   # 안전 기본값 (문제 시 바로 롤백용)
+  bootstrap:
+    enabled: true # 로컬/배포 최초 1회 채우고 나면 false로 꺼도 괜찮
+

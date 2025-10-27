@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cloudbread-ing
+  namespace: backend
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"   # 허용 크기 50MB
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"     # 업스트림(스프링)에서 응답 바이트를 읽는 사이사이 대기시간 한도
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"     # NGINX→업스트림으로 요청/바디 전송하는 사이사이 대기시간 한도
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "120"   # 업스트림과 TCP 연결 맺는 시간 한도
+spec:
+  ingressClassName: nginx     # 클러스터에 있는 ingress-nginx 컨트롤러 사용
+  rules:
+    - host: cloudbread.133.186.213.185.nip.io   # ← 1)에서 정한 호스트
+      http:
+        paths:
+          # 외부 /api/**  → 내부도 /api/** 그대로 전달
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: cloudbread-backend-svc
+                port:
+                  number: 80
+          # /uploads -> 정적 파일 요청도 BE로 전달되도록!
+          - path: /uploads
+            pathType: Prefix
+            backend:
+              service:
+                name: cloudbread-backend-svc
+                port:
+                  number: 80

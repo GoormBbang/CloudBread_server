@@ -17,4 +17,13 @@ public interface UserHealthRepository extends JpaRepository<UserHealth, Long> {
     @Query("delete from UserHealth uh where uh.user.id = :userId")
     void deleteByUserId(@Param("userId") Long userId);
 
+    @Query("""
+           select uh
+           from UserHealth uh
+           join fetch uh.healthType ht
+           where uh.user.id = :userId
+           """)
+    List<UserHealth> findWithHealthTypeByUserId(Long userId);
+
+
 }

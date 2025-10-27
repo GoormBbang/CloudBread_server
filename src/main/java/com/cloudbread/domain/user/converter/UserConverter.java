@@ -110,5 +110,12 @@ public class UserConverter {
                 .build();
     }
 
+    public static UserResponseDto.UpdateUserSummaryResponse toUpdateUserSummaryResponse(User user) {//메인 내 정보 수정
+        return UserResponseDto.UpdateUserSummaryResponse.builder()
+                .id(user.getId())
+                .birthDate(user.getBirthDate())
+                .build();
+    }
+
 
 }

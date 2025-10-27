@@ -16,4 +16,13 @@ public interface UserAllergyRepository extends JpaRepository<UserAllergy, Long> 
     @Modifying
     @Query("delete from UserAllergy ua where ua.user.id = :userId")
     void deleteByUserId(@Param("userId") Long userId);
+
+    @Query("""
+           select ua
+           from UserAllergy ua
+           join fetch ua.allergy a
+           where ua.user.id = :userId
+           """)
+    List<UserAllergy> findWithAllergyByUserId(Long userId);
+
 }

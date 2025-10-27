@@ -12,6 +12,7 @@ import com.cloudbread.global.common.response.BaseResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.executable.ValidateOnExecution;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,6 +26,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@Slf4j
 public class UserRestController {
     private final UserService userService;
 
@@ -84,15 +86,38 @@ public class UserRestController {
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/users/me")
+    @GetMapping("/users/me")//내 정보 조회
     public BaseResponse<UserResponseDto.MyInfoResponse> getInfo2(//내 정보 조회
-            @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+            @AuthenticationPrincipal CustomOAuth2User principal
     ) {
-        Long userId = customOAuth2User.getUserId();
+        log.info("[/users/me] principalClass={}, id={}",
+                principal==null? "null":principal.getClass().getName(),
+                principal==null? "null":principal.getUserId());
+
+        Long userId = principal.getUserId();
+        log.info("[/users/me] service done. building response...");
         UserResponseDto.MyInfoResponse result = userService.getInfo2(userId);
 
+        log.info("[/users/me] response ready. returning 200.");
         return BaseResponse.onSuccess(SuccessStatus.USER_INFO_SUCCESS, result);
     }
+
+    @GetMapping("/users/me/ver2")//내 정보 조회
+    public BaseResponse<UserResponseDto.MyInfoResponse> getInfo2Ver2(//내 정보 조회
+                                                                 @AuthenticationPrincipal CustomOAuth2User principal
+    ) {
+        log.info("[/users/me] principalClass={}, id={}",
+                principal==null? "null":principal.getClass().getName(),
+                principal==null? "null":principal.getUserId());
+
+        Long userId = principal.getUserId();
+        log.info("[/users/me] service done. building response...");
+        UserResponseDto.MyInfoResponse result = userService.getInfo2(userId);
+
+        log.info("[/users/me] response ready. returning 200.");
+        return BaseResponse.onSuccess(SuccessStatus.USER_INFO_SUCCESS, result);
+    }
+
 
     @PutMapping("/users/me")//내 정보 수정
     public BaseResponse<UserResponseDto.UpdateResponse> updateMyInfo(
@@ -104,7 +129,9 @@ public class UserRestController {
         return BaseResponse.onSuccess(SuccessStatus.USER_INFO_UPDATE_SUCCESS, response);
     }
 
-    @GetMapping("/users/user-summary")//로그인한사용자정보조회
+    //@GetMapping("/users/user-summary")//로그인한사용자정보조회
+    @GetMapping("/users/user-summary")//로그인한 사용자 정보 조회
+
     public BaseResponse<UserResponseDto.UserSummaryResponse> getUserSummary(
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User
     ) {
@@ -114,6 +141,16 @@ public class UserRestController {
         return BaseResponse.onSuccess(SuccessStatus.USER_INFO_SUCCESS, result);
     }
 
+    @PutMapping("/users/user-summary")
+    public BaseResponse<UserResponseDto.UpdateUserSummaryResponse> updateUserSummary(
+            @AuthenticationPrincipal CustomOAuth2User customOAuth2User,
+            @RequestBody @Valid UserRequestDto.UpdateUserSummaryRequest request
+    ) {
+        Long userId = customOAuth2User.getUserId();
+        UserResponseDto.UpdateUserSummaryResponse result = userService.updateUserSummary(userId, request);
+
+        return BaseResponse.onSuccess(SuccessStatus.USER_INFO_UPDATE_SUCCESS, result);
+    }
 
     // 로그아웃
     @PostMapping("/users/logout")
@@ -122,6 +159,15 @@ public class UserRestController {
 
         return BaseResponse.onSuccess(SuccessStatus._OK, "logout success!");
 
+    }
+
+    //회원 탈퇴
+    @DeleteMapping("/users/me")
+    public BaseResponse<String> deleteUser(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
+        Long userId = customOAuth2User.getUserId();
+        userService.deleteUser(userId);
+
+        return BaseResponse.onSuccess(SuccessStatus.USER_DELETE_SUCCESS, null);
     }
 
 

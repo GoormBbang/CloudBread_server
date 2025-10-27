@@ -54,9 +54,28 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // poi (엑셀 파싱)
-    implementation 'org.apache.poi:poi:5.2.5'
     implementation 'org.apache.poi:poi-ooxml:5.2.5'
+    implementation 'org.apache.poi:poi-ooxml-lite:5.2.5'
 
+    // webClient
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    //crawling
+    implementation 'org.seleniumhq.selenium:selenium-java:4.25.0'
+    implementation 'org.jsoup:jsoup:1.17.2'
+    implementation 'org.apache.poi:poi:5.2.3'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
+
+    //ai호출시 due_date -> duedate로 인식하게
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // jsr310
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // elasticsearch
+    implementation 'co.elastic.clients:elasticsearch-java:8.14.0'
+    implementation 'org.elasticsearch.client:elasticsearch-rest-client:8.14.0'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
 
 }
 

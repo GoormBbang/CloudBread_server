@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+# Deployment : 배포, 컨테이너 이미지를 가져와서 Pod를 만들고 관리
+kind: Deployment
+metadata:
+  name: cloudbread-backend
+  namespace: backend
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate            # ★ Recreate 전략 고정
+  revisionHistoryLimit: 1     # ★ 예전 RS 누적 방지(권장)
+  selector:
+    matchLabels: { app: cloudbread-backend }
+  template:
+    metadata:
+      labels: { app: cloudbread-backend }
+    spec:
+      containers: # 이 파드 안에서 실행할 컨테이너 정의
+        - name: cloudbread-backend
+          image: minjiki222/cloudbread-backend:latest
+          ports:
+            - containerPort: 8080
+          envFrom: # 앞서 생성해서 넣은 app-env 환경변수 갖고와서 넣기
+            - secretRef: { name: app-env }
+          volumeMounts: # BE 파드 안에서 /data/uploads가 실제 노드 디스크와 연결된다
+            - name: uploads # 외부 접근 URL 경로 (FE, AI..)
+              mountPath: /data/uploads # BE 파드 내부 경로
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8080 }
+            initialDelaySeconds: 30
+            periodSeconds: 20
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: uploads-pvc
+---
+# 서비스 - 파드를 외부에 노출시키고 접근가능하게끔 하는 역할
+# loadbalancer 말고 clusterIP로 수정
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudbread-backend-svc
+  namespace: backend
+spec:
+  type: ClusterIP     # ★ LoadBalancer 말고 ClusterIP
+  selector: { app: cloudbread-backend } # app: cloudbread-backend 라벨을 가진 모든 파드를 이 서비스와 연결하라
+  ports:
+    - port: 80        # 외부에서 접근하는 포트
+      targetPort: 8080

@@ -1,5 +1,6 @@
 package com.cloudbread.domain.user.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -92,5 +93,42 @@ public class UserResponseDto {
         private LocalDate dueDate;
         private Integer pregnancyWeek;//임신주차
 
+    }
+
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Getter
+    public static class UpdateUserSummaryResponse {// 메인-내 정보 수정
+        private Long id;
+        private LocalDate birthDate;
+    }
+
+    @Builder
+    @Getter
+    @AllArgsConstructor
+    public static class TipResponse {//이번주차팁 전체조회
+        private int week_number;
+        private List<TipDto> tips;
+    }
+
+    @Builder
+    @Getter
+    @AllArgsConstructor
+    public static class TipDto {//이번주차팁-태아,임산부,영양 조회시 사용
+        private Long id;
+        private String kind;      // BABY, MOM, NUTRITION
+        private String title;
+        private String description;
+    }
+
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ProfileResponse {
+        private String nickname;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate birthDate;
     }
 }

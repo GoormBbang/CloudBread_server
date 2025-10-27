@@ -3,6 +3,8 @@ package com.cloudbread.domain.user.application;
 import com.cloudbread.auth.token.domain.Token;
 import com.cloudbread.auth.token.domain.TokenRepository;
 import com.cloudbread.auth.token.exception.RefreshTokenNotFoundException;
+import com.cloudbread.domain.crawling.domain.entity.TipContent;
+import com.cloudbread.domain.crawling.domain.repository.TipContentRepository;
 import com.cloudbread.domain.user.converter.UserConverter;
 import com.cloudbread.domain.user.domain.entity.*;
 import com.cloudbread.domain.user.domain.enums.DietTypeEnum;
@@ -10,14 +12,19 @@ import com.cloudbread.domain.user.domain.enums.HealthTypeEnum;
 import com.cloudbread.domain.user.domain.repository.*;
 import com.cloudbread.domain.user.dto.UserRequestDto;
 import com.cloudbread.domain.user.dto.UserResponseDto;
+import com.cloudbread.domain.user.exception.UserAlreadyDeactivatedException;
 import com.cloudbread.domain.user.exception.UserNotFoundException;
 import com.cloudbread.global.common.code.status.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -164,7 +171,6 @@ public class UserServiceImpl implements UserService {
 
         // 기본 정보 업데이트
         user.updateDetails(
-                null,
                 request.getHeight(),
                 request.getWeight(),
                 request.getDueDate()
@@ -219,7 +225,38 @@ public class UserServiceImpl implements UserService {
         return UserConverter.toUserSummaryResponse(user);
     }
 
+    @Override
+    @Transactional
+    public UserResponseDto.UpdateUserSummaryResponse updateUserSummary(
+            Long userId,
+            UserRequestDto.UpdateUserSummaryRequest request
+    ) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
 
+        // 닉네임 수정
+        if (request.getNickname() != null) {
+            user.updateNickname(request.getNickname());
+        }
+
+        // 생년월일 수정
+        if (request.getBirthDate() != null) {
+            user.updateBirthDate(request.getBirthDate());
+        }
+
+        return UserConverter.toUpdateUserSummaryResponse(user);
+    }
+
+    @Override
+    public UserResponseDto.ProfileResponse getUserProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다. userId=" + userId));
+
+        return UserResponseDto.ProfileResponse.builder()
+                .nickname(user.getNickname())
+                .birthDate(user.getBirthDate())
+                .build();
+    }
 
     @Override
     public void logout(Long userId) {
@@ -227,5 +264,19 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RefreshTokenNotFoundException());
         tokenRepository.delete(token);
     }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        if (!user.isActivated()) {
+            throw new UserAlreadyDeactivatedException();
+        }
+
+        user.deactivate(); // activated = false
+    }
+
 
 }

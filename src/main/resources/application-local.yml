@@ -1,0 +1,30 @@
+# application-local.yml -> 기존 .gitignore에 추가된 application-secret.yml을 그대로 쓴다
+spring:
+  config:
+    import: application-secret.yml
+
+# 파일 저장 경로
+storage:
+  local:
+    base-dir: ./uploads
+    public-base-url: "http://localhost:8080/uploads"
+
+ai:
+  food:
+    enabled: true
+    base-url: "http://photo-label-server-svc.ai-services.svc.cluster.local"
+
+# ai 챗봇 (로컬) ingress controller 거쳐서
+  chat:
+    base-url: http://cloudbread.133.186.213.185.nip.io
+
+# 로컬 ElasticSearch - es 잘안되면, jpa로 롤백하기
+search:
+  engine: es
+  es:
+    host: http://localhost:9200
+    index: foods
+
+# application-local.yml
+swagger:
+  server-url: http://localhost:8080
