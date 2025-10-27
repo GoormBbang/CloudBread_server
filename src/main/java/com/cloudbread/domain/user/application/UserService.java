@@ -11,7 +11,7 @@ public interface UserService {
     UserResponseDto.MyInfoResponse getInfo2(Long userId);
 
     UserResponseDto.UpdateResponse updateMyInfo(Long userId, UserRequestDto.UpdateMyInfoRequest request);
-    UserResponseDto.UserSummaryResponse getUserSummary(Long userId);
+    UserResponseDto.UserSummaryResponse getUserSummary(Long userId);//로그인한 사용자 정보 조회
 
     void logout(Long userId);
 
