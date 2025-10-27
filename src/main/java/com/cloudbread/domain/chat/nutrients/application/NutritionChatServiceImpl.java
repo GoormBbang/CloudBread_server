@@ -20,10 +20,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -104,8 +107,23 @@ public class NutritionChatServiceImpl implements NutritionChatService {
                 .uri("/api/chatbot/chat")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(aiReq) // FastAPI에게 보낼 requestBody
-                .retrieve()
-                .bodyToMono(AiChatResponse.class)
+              //  .retrieve()
+               // .bodyToMono(AiChatResponse.class)
+                .exchangeToMono((ClientResponse resp) -> {
+                    HttpStatusCode sc = resp.statusCode();
+                    if (sc.is2xxSuccessful()) {
+                        return resp.bodyToMono(AiChatResponse.class);
+                    } else {
+                        // 에러 본문까지 로깅
+                        return resp.bodyToMono(String.class)
+                                .defaultIfEmpty("")
+                                .flatMap(body -> {
+                                    log.error("[NC→AI] {} {} Error body: {}",
+                                            sc.value(), "/api/chatbot/chat", body);
+                                    return resp.createException().flatMap(Mono::error);
+                                });
+                    }
+                })
                 .block(); // 테스트 중이면 무제한, 운영 시 .block(Duration.ofSeconds(30)) 권장
 
         // 매핑
