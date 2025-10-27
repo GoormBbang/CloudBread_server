@@ -129,7 +129,9 @@ public class UserRestController {
         return BaseResponse.onSuccess(SuccessStatus.USER_INFO_UPDATE_SUCCESS, response);
     }
 
+    //@GetMapping("/users/user-summary")//로그인한사용자정보조회
     @GetMapping("/users/user-summary")//로그인한 사용자 정보 조회
+
     public BaseResponse<UserResponseDto.UserSummaryResponse> getUserSummary(
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User
     ) {

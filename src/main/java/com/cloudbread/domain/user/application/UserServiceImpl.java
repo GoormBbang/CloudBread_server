@@ -217,7 +217,7 @@ public class UserServiceImpl implements UserService {
         return UserConverter.toUpdateResponse(user);
     }
 
-    @Override
+    @Override//로그인한 사용자 정보 조회
     public UserResponseDto.UserSummaryResponse getUserSummary(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);

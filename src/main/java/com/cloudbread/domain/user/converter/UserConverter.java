@@ -9,6 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.temporal.ChronoUnit;
+import java.time.ZoneId;
+import java.time.LocalDate;
+
 
 public class UserConverter {
 
@@ -72,12 +76,37 @@ public class UserConverter {
                 .build();
     }
 
+    //로그인한 사용자 정보 조회
+//    public static UserResponseDto.UserSummaryResponse toUserSummaryResponse(User user) {
+//        return UserResponseDto.UserSummaryResponse.builder()
+//                .id(user.getId())
+//                .nickname(user.getNickname())
+//                .profileImageUrl(user.getProfileImageUrl())
+//                .dueDate(user.getDueDate())
+//                .build();
+//    }
     public static UserResponseDto.UserSummaryResponse toUserSummaryResponse(User user) {
+        LocalDate dueDate = user.getDueDate();
+
+        // ✅ 임신 주차 계산
+        Integer pregnancyWeek = null;
+        if (dueDate != null) {
+            ZoneId KST = ZoneId.of("Asia/Seoul");
+            LocalDate today = LocalDate.now(KST);
+            // 임신은 보통 40주를 기준으로 계산
+            LocalDate startDate = dueDate.minusWeeks(40);
+            long weeks = ChronoUnit.WEEKS.between(startDate, today);
+
+            // 0 이하 방어
+            pregnancyWeek = (int) Math.max(weeks, 0);
+        }
+
         return UserResponseDto.UserSummaryResponse.builder()
                 .id(user.getId())
                 .nickname(user.getNickname())
                 .profileImageUrl(user.getProfileImageUrl())
-                .dueDate(user.getDueDate())
+                .dueDate(dueDate)
+                .pregnancyWeek(pregnancyWeek)
                 .build();
     }
 
