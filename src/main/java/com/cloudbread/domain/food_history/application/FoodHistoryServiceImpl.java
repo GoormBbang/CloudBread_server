@@ -371,20 +371,18 @@ public class FoodHistoryServiceImpl implements FoodHistoryService {
     //기록-오늘먹은음식조회
     @Override
     public FoodHistoryTodayResponse getTodayFoodHistory(Long userId, LocalDate date) {
-        ZoneId zone = ZoneId.of("Asia/Seoul");
-        LocalDate targetDate = (date != null) ? date : LocalDate.now(zone);
+        ZoneId kst = ZoneId.of("Asia/Seoul");
+        LocalDate targetDate = (date != null) ? date : LocalDate.now(kst);
 
         // KST 00:00~24:00을 UTC 시간으로 변환
-        ZonedDateTime startKst = targetDate.atStartOfDay(zone);
-        ZonedDateTime endKst = startKst.plusDays(1);
+        LocalDateTime startKst = targetDate.atStartOfDay(kst).toLocalDateTime();
+        LocalDateTime endKst   = startKst.plusDays(1);
 
-        LocalDateTime startUtc = startKst.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
-        LocalDateTime endUtc = endKst.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+        log.info("[오늘의 음식 조회] userId={}, KST일자={}, 범위(KST)={}~{}",
+                userId, targetDate, startKst, endKst);
 
-        log.info("[오늘의 음식 조회] userId={}, KST={}, UTC범위={}~{}",
-                userId, targetDate, startUtc, endUtc);
 
-        List<Object[]> result = historyRepository.findTodayFoods(userId, startUtc, endUtc);
+        List<Object[]> result = historyRepository.findTodayFoods(userId, startKst, endKst);
 
         if (result.isEmpty()) {
             log.warn("오늘({}) 식단 기록 없음 (userId={})", targetDate, userId);
