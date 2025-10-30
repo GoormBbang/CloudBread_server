@@ -1,6 +1,5 @@
 
 
-
 # application.yml - 공통, 기본 프로파일
 #server:
 #  forward-headers-strategy: native
